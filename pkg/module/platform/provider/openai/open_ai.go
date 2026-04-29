@@ -237,11 +237,17 @@ func (o *OpenAI) call(ctx context.Context, method, path string, body any, result
 	}
 	defer func() { _ = response.Body.Close() }()
 
+	data, err := io.ReadAll(response.Body)
+	if err != nil {
+		return fmt.Errorf("read response: %w", err)
+	}
+	logger.Debugw(ctx, "http response", "status", response.Status, "body", string(data))
+
 	if response.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status code: %d", response.StatusCode)
 	}
 
-	if err = json.NewDecoder(response.Body).Decode(result); err != nil {
+	if err = json.Unmarshal(data, result); err != nil {
 		return fmt.Errorf("decode response: %w", err)
 	}
 
