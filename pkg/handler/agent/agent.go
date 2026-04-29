@@ -222,15 +222,15 @@ func (a *Agent) runAgentLoop(ctx context.Context, lc *loopContext) error {
 			if err != nil {
 				return fmt.Errorf("send response content message: %w", err)
 			}
+		}
 
-			err = lc.chatSession.AddMessage(ctx, provider.Message{
-				Role:      provider.MessageRoleAssistant,
-				Content:   response.Content,
-				ToolCalls: response.ToolCalls,
-			})
-			if err != nil {
-				return fmt.Errorf("add assistant message to session: %w", err)
-			}
+		err = lc.chatSession.AddMessage(ctx, provider.Message{
+			Role:      provider.MessageRoleAssistant,
+			Content:   response.Content,
+			ToolCalls: response.ToolCalls,
+		})
+		if err != nil {
+			return fmt.Errorf("add assistant message to session: %w", err)
 		}
 
 		if len(response.ToolCalls) == 0 {

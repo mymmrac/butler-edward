@@ -26,7 +26,7 @@ func (t *ListFileTool) Definition() provider.ToolDefinition {
 		Type: provider.ToolTypeFunction,
 		Function: &provider.ToolFunction{
 			Name:        "list_files",
-			Description: "Lists files or directories for a given path.",
+			Description: "Lists files or directories for a given path. Returns a formatted string listing the files and their types.",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
@@ -58,6 +58,7 @@ func (t *ListFileTool) Call(_ context.Context, args json.RawMessage) (string, er
 	}
 
 	sb := &strings.Builder{}
+	sb.WriteString(fmt.Sprintf("Files in %s:\n", parsed.Path))
 	for _, entry := range entries {
 		sb.WriteByte(fileTypeChar(entry))
 		sb.WriteByte(' ')
