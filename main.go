@@ -11,7 +11,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/mymmrac/butler-edward/pkg/handler/agent"
 	"github.com/mymmrac/butler-edward/pkg/module/logger"
+	"github.com/mymmrac/butler-edward/pkg/module/platform/channel"
+	"github.com/mymmrac/butler-edward/pkg/module/platform/channel/terminal"
+	"github.com/mymmrac/butler-edward/pkg/module/platform/provider"
+	"github.com/mymmrac/butler-edward/pkg/module/platform/provider/openai"
+	"github.com/mymmrac/butler-edward/pkg/module/platform/session/inmemory"
+	"github.com/mymmrac/butler-edward/pkg/module/platform/tool"
 	"github.com/mymmrac/butler-edward/pkg/module/version"
 )
 
@@ -73,9 +80,28 @@ func main() {
 }
 
 func run(ctx context.Context, v *viper.Viper) error {
-	_, _ = ctx, v
-	//nolint:forbidigo
-	//revive:disable:unhandled-error
-	fmt.Println("Hello World!")
+	groqProvider, err := openai.NewOpenAI(v.GetString("groq.base-url"), v.GetString("groq.api-key"))
+	if err != nil {
+		return fmt.Errorf("new groq provider: %w", err)
+	}
+
+	agentInstance, err := agent.NewAgent(
+		[]channel.Channel{terminal.NewTerminal()},
+		[]provider.Provider{groqProvider},
+		[]tool.Tool{},
+		inmemory.NewInMemory(),
+	)
+	if err != nil {
+		return fmt.Errorf("new agent: %w", err)
+	}
+
+	if err = agentInstance.SelectProviderAndModel(ctx, "api.groq.com", "llama-3.1-8b-instant"); err != nil {
+		return fmt.Errorf("select provider and model: %w", err)
+	}
+
+	if err = agentInstance.Run(ctx); err != nil {
+		return fmt.Errorf("run agent: %w", err)
+	}
+
 	return nil
 }

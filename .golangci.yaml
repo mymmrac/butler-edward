@@ -11,6 +11,7 @@ linters:
     - exhaustruct
     - funcorder
     - godot
+    - godox
     - interfacebloat
     - ireturn
     - mnd
@@ -64,6 +65,10 @@ linters:
         - name: package-comments
           disabled: true
         - name: blank-imports
+          disabled: true
+        - name: max-public-structs
+          disabled: true
+        - name: unnecessary-format
           disabled: true
 
 formatters:

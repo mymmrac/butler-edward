@@ -1,0 +1,27 @@
+package channel
+
+import "context"
+
+// Channel representation.
+type Channel interface {
+	// Name returns channel name.
+	Name() string
+
+	// Start starts channel. Returns chan with received channel messages.
+	Start(ctx context.Context) (<-chan Message, error)
+	// Stop stops channel.
+	Stop(ctx context.Context) error
+
+	// Send sends the message to the channel.
+	Send(ctx context.Context, msg Message) error
+}
+
+// Message represents a message received from or sent to the channel.
+type Message struct {
+	// ChatID is the unique identifier of the chat to which the message belongs.
+	ChatID string
+	// UserID is the unique identifier of the user who sent the message. When sending the message, this can be omitted.
+	UserID string
+	// Text is the text of the message.
+	Text string
+}
