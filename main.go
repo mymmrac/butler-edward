@@ -19,6 +19,7 @@ import (
 	"github.com/mymmrac/butler-edward/pkg/module/platform/provider/openai"
 	"github.com/mymmrac/butler-edward/pkg/module/platform/session/inmemory"
 	"github.com/mymmrac/butler-edward/pkg/module/platform/tool"
+	"github.com/mymmrac/butler-edward/pkg/module/platform/tool/filesystem"
 	"github.com/mymmrac/butler-edward/pkg/module/version"
 )
 
@@ -85,10 +86,24 @@ func run(ctx context.Context, v *viper.Viper) error {
 		return fmt.Errorf("new groq provider: %w", err)
 	}
 
+	root, err := os.OpenRoot(v.GetString("workspace.root"))
+	if err != nil {
+		return fmt.Errorf("open workspace root: %w", err)
+	}
+	defer func() { _ = root.Close() }()
+
 	agentInstance, err := agent.NewAgent(
-		[]channel.Channel{terminal.NewTerminal()},
-		[]provider.Provider{groqProvider},
-		[]tool.Tool{},
+		[]channel.Channel{
+			terminal.NewTerminal(),
+		},
+		[]provider.Provider{
+			groqProvider,
+		},
+		[]tool.Tool{
+			filesystem.NewListFileTool(root),
+			filesystem.NewReadFileTool(root),
+			filesystem.NewWriteFileTool(root),
+		},
 		inmemory.NewInMemory(),
 	)
 	if err != nil {
