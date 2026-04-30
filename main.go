@@ -13,6 +13,7 @@ import (
 
 	"github.com/mymmrac/butler-edward/pkg/handler/agent"
 	"github.com/mymmrac/butler-edward/pkg/module/logger"
+	"github.com/mymmrac/butler-edward/pkg/module/platform"
 	"github.com/mymmrac/butler-edward/pkg/module/platform/channel"
 	"github.com/mymmrac/butler-edward/pkg/module/platform/channel/telegram"
 	"github.com/mymmrac/butler-edward/pkg/module/platform/channel/terminal"
@@ -47,6 +48,9 @@ func main() {
 	v.AutomaticEnv()
 	v.SetEnvPrefix("BUTLER_EDWARD")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
+	v.SetConfigName("config")
+	v.SetConfigType("yaml")
+	v.AddConfigPath(".")
 	v.SetDefault("logger.level", "debug")
 
 	logger.SetLevel(v.GetString("logger.level"))
@@ -82,30 +86,49 @@ func main() {
 }
 
 func run(ctx context.Context, v *viper.Viper) error {
-	telegramChannel, err := telegram.NewTelegram(ctx, v.GetString("telegram.bot-token"))
-	if err != nil {
-		return fmt.Errorf("new telegram channel: %w", err)
+	if err := v.ReadInConfig(); err != nil {
+		return fmt.Errorf("read config: %w", err)
 	}
 
-	groqProvider, err := openai.NewOpenAI(v.GetString("groq.base-url"), v.GetString("groq.api-key"))
+	cfg, err := platform.ParseConfig(v)
 	if err != nil {
-		return fmt.Errorf("new groq provider: %w", err)
+		return fmt.Errorf("parse config: %w", err)
 	}
 
-	root, err := os.OpenRoot(v.GetString("workspace.root"))
+	var channels []channel.Channel
+
+	if cfg.Channels.Terminal.Enabled {
+		channels = append(channels, terminal.NewTerminal())
+	}
+
+	if cfg.Channels.Telegram.Enabled {
+		var telegramChannel *telegram.Telegram
+		telegramChannel, err = telegram.NewTelegram(ctx, cfg.Channels.Telegram.BotToken)
+		if err != nil {
+			return fmt.Errorf("new telegram channel: %w", err)
+		}
+		channels = append(channels, telegramChannel)
+	}
+
+	var providers []provider.Provider
+
+	for name, config := range cfg.Providers.OpenAICompatible {
+		var openAIProvider *openai.OpenAI
+		openAIProvider, err = openai.NewOpenAI(name, config.BaseURL, config.APIKey)
+		if err != nil {
+			return fmt.Errorf("new OpenAI compatible %q provider: %w", name, err)
+		}
+		providers = append(providers, openAIProvider)
+	}
+
+	root, err := os.OpenRoot(cfg.Workspace.Root)
 	if err != nil {
 		return fmt.Errorf("open workspace root: %w", err)
 	}
 	defer func() { _ = root.Close() }()
 
 	agentInstance, err := agent.NewAgent(
-		[]channel.Channel{
-			telegramChannel,
-			terminal.NewTerminal(),
-		},
-		[]provider.Provider{
-			groqProvider,
-		},
+		channels, providers,
 		[]tool.Tool{
 			filesystem.NewReadDirTool(root),
 			filesystem.NewReadFileTool(root),
@@ -117,7 +140,7 @@ func run(ctx context.Context, v *viper.Viper) error {
 		return fmt.Errorf("new agent: %w", err)
 	}
 
-	if err = agentInstance.SelectProviderAndModel(ctx, "api.groq.com", "llama-3.1-8b-instant"); err != nil {
+	if err = agentInstance.SelectProviderAndModel(ctx, "groq", "llama-3.1-8b-instant"); err != nil {
 		return fmt.Errorf("select provider and model: %w", err)
 	}
 

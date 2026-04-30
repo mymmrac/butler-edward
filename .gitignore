@@ -5,3 +5,8 @@
 # Binaries & outputs
 bin/
 .task/
+
+# Configs
+config.yaml
+config.*.yaml
+!config.example.yaml

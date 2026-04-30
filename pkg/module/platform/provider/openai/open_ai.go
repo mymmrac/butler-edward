@@ -21,6 +21,7 @@ import (
 // OpenAI represents OpenAI compatible provider.
 type OpenAI struct {
 	client  *http.Client
+	name    string
 	baseURL url.URL
 	apiKey  string
 
@@ -29,13 +30,14 @@ type OpenAI struct {
 }
 
 // NewOpenAI creates a new OpenAI compatible provider.
-func NewOpenAI(baseURL, apiKey string) (*OpenAI, error) {
+func NewOpenAI(name, baseURL, apiKey string) (*OpenAI, error) {
 	parsedURL, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse base url: %w", err)
 	}
 	return &OpenAI{
 		client:     http.DefaultClient,
+		name:       name,
 		baseURL:    *parsedURL,
 		apiKey:     apiKey,
 		modelsLock: &sync.RWMutex{},
@@ -45,7 +47,7 @@ func NewOpenAI(baseURL, apiKey string) (*OpenAI, error) {
 
 // Name returns provider name.
 func (o *OpenAI) Name() string {
-	return o.baseURL.Host
+	return o.name
 }
 
 // Models returns list of available models.

@@ -1,0 +1,17 @@
+workspace:
+  root: "./workspace"
+
+channels:
+  terminal:
+    enabled: true
+
+  telegram:
+    enabled: true
+    bot_token: "BOT_TOKEN"
+
+providers:
+  openai_compatible:
+    groq:
+      enabled: true
+      base_url: "https://api.groq.com"
+      api_key: "API_KEY"
