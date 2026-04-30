@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/mymmrac/butler-edward/pkg/module/logger"
@@ -164,7 +165,7 @@ func (a *Agent) handleMessage(ctx context.Context, ch channel.Channel, msg chann
 	if isNew {
 		err = chatSession.AddMessage(ctx, provider.Message{
 			Role:    provider.MessageRoleSystem,
-			Content: systemPrompt,
+			Content: strings.TrimSpace(systemPrompt),
 		})
 		if err != nil {
 			return fmt.Errorf("add system message to session: %w", err)

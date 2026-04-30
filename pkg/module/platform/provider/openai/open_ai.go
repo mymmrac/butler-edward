@@ -194,7 +194,7 @@ type chatToolFunction struct {
 type chatMessage struct {
 	Role       string         `json:"role"`
 	Name       string         `json:"name,omitempty"`
-	Content    string         `json:"content,omitempty"`
+	Content    string         `json:"content"`
 	ToolCalls  []chatToolCall `json:"tool_calls,omitempty"`
 	ToolCallID string         `json:"tool_call_id,omitempty"`
 }
