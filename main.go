@@ -14,6 +14,7 @@ import (
 	"github.com/mymmrac/butler-edward/pkg/handler/agent"
 	"github.com/mymmrac/butler-edward/pkg/module/logger"
 	"github.com/mymmrac/butler-edward/pkg/module/platform/channel"
+	"github.com/mymmrac/butler-edward/pkg/module/platform/channel/telegram"
 	"github.com/mymmrac/butler-edward/pkg/module/platform/channel/terminal"
 	"github.com/mymmrac/butler-edward/pkg/module/platform/provider"
 	"github.com/mymmrac/butler-edward/pkg/module/platform/provider/openai"
@@ -81,6 +82,11 @@ func main() {
 }
 
 func run(ctx context.Context, v *viper.Viper) error {
+	telegramChannel, err := telegram.NewTelegram(ctx, v.GetString("telegram.bot-token"))
+	if err != nil {
+		return fmt.Errorf("new telegram channel: %w", err)
+	}
+
 	groqProvider, err := openai.NewOpenAI(v.GetString("groq.base-url"), v.GetString("groq.api-key"))
 	if err != nil {
 		return fmt.Errorf("new groq provider: %w", err)
@@ -94,6 +100,7 @@ func run(ctx context.Context, v *viper.Viper) error {
 
 	agentInstance, err := agent.NewAgent(
 		[]channel.Channel{
+			telegramChannel,
 			terminal.NewTerminal(),
 		},
 		[]provider.Provider{

@@ -1,5 +1,6 @@
 package agent
 
+//nolint:lll
 const systemPrompt = `
 You are a helpful butler named Edward.
 You have access to different tools to help you with your tasks.

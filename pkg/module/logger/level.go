@@ -34,3 +34,15 @@ func SetLevel(lvl string) {
 	}
 	atomicLevel.SetLevel(l)
 }
+
+// Level is log level.
+type Level string
+
+// Log levels.
+const (
+	LevelDebug Level = "debug"
+	LevelInfo  Level = "info"
+	LevelWarn  Level = "warn"
+	LevelError Level = "error"
+	LevelFatal Level = "fatal"
+)

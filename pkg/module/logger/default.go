@@ -71,6 +71,21 @@ func (l *ZapLogger) WithOptions(opts ...Option) Logger {
 		switch o := opt.(type) {
 		case *SkipCallerOption:
 			zOps = append(zOps, zap.AddCallerSkip(o.Skip))
+		case *IncreasedLevelOption:
+			var level zapcore.Level
+			switch o.Level {
+			case LevelInfo:
+				level = zapcore.InfoLevel
+			case LevelWarn:
+				level = zapcore.WarnLevel
+			case LevelError:
+				level = zapcore.ErrorLevel
+			case LevelFatal:
+				level = zapcore.FatalLevel
+			default:
+				level = zapcore.DebugLevel
+			}
+			zOps = append(zOps, zap.IncreaseLevel(level))
 		default:
 			l.Errorw("unsupported option type", "type", fmt.Sprintf("%T", o))
 		}

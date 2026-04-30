@@ -25,8 +25,10 @@ func (t *ReadDirTool) Definition() provider.ToolDefinition {
 	return provider.ToolDefinition{
 		Type: provider.ToolTypeFunction,
 		Function: &provider.ToolFunction{
-			Name:        "read_dir",
-			Description: "Lists files and directories for a given path. Returns a list of files in the format `{type} {name}`, where the type is `-` for files and `d` for directories.",
+			Name: "read_dir",
+			Description: "Lists files and directories for a given path. " +
+				"Returns a list of files in the format `{type} {name}`, " +
+				"where the type is `-` for files and `d` for directories.",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
@@ -65,12 +67,12 @@ func (t *ReadDirTool) Call(_ context.Context, args json.RawMessage) (string, err
 	}
 
 	sb := &strings.Builder{}
-	sb.WriteString(fmt.Sprintf("Files in %s:\n", in.Path))
+	_, _ = fmt.Fprintf(sb, "Files in %s:\n", in.Path)
 	for _, entry := range entries {
-		sb.WriteByte(fileTypeChar(entry))
-		sb.WriteByte(' ')
-		sb.WriteString(entry.Name())
-		sb.WriteByte('\n')
+		_ = sb.WriteByte(fileTypeChar(entry))
+		_ = sb.WriteByte(' ')
+		_, _ = fmt.Fprint(sb, entry.Name())
+		_ = sb.WriteByte('\n')
 	}
 	return sb.String(), nil
 }
