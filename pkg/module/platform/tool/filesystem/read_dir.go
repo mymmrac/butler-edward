@@ -10,27 +10,30 @@ import (
 	"github.com/mymmrac/butler-edward/pkg/module/platform/provider"
 )
 
-// ListFileTool represents a tool that lists files in the filesystem.
-type ListFileTool struct {
+// ReadDirTool represents a tool that lists files in the filesystem.
+type ReadDirTool struct {
 	root *os.Root
 }
 
-// NewListFileTool creates a new ListFileTool.
-func NewListFileTool(root *os.Root) *ListFileTool {
-	return &ListFileTool{root: root}
+// NewReadDirTool creates a new ReadDirTool.
+func NewReadDirTool(root *os.Root) *ReadDirTool {
+	return &ReadDirTool{root: root}
 }
 
 // Definition returns tool definition.
-func (t *ListFileTool) Definition() provider.ToolDefinition {
+func (t *ReadDirTool) Definition() provider.ToolDefinition {
 	return provider.ToolDefinition{
 		Type: provider.ToolTypeFunction,
 		Function: &provider.ToolFunction{
-			Name:        "list_files",
-			Description: "Lists files or directories for a given path. Returns a formatted string listing the files and their types.",
+			Name:        "read_dir",
+			Description: "Lists files and directories for a given path. Returns a list of files in the format `{type} {name}`, where the type is `-` for files and `d` for directories.",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
-					"path": map[string]any{"type": "string", "description": "The path to list files"},
+					"path": map[string]any{
+						"type":        "string",
+						"description": "The path to list files.",
+					},
 				},
 				"required": []string{"path"},
 			},
@@ -39,15 +42,15 @@ func (t *ListFileTool) Definition() provider.ToolDefinition {
 }
 
 // Call reads the content of the file at the specified path.
-func (t *ListFileTool) Call(_ context.Context, args json.RawMessage) (string, error) {
-	var parsed struct {
+func (t *ReadDirTool) Call(_ context.Context, args json.RawMessage) (string, error) {
+	var in struct {
 		Path string `json:"path"`
 	}
-	if err := json.Unmarshal(args, &parsed); err != nil {
+	if err := json.Unmarshal(args, &in); err != nil {
 		return "", fmt.Errorf("invalid args: %w", err)
 	}
 
-	dir, err := t.root.Open(parsed.Path)
+	dir, err := t.root.Open(in.Path)
 	if err != nil {
 		return "", fmt.Errorf("open dir: %w", err)
 	}
@@ -57,8 +60,12 @@ func (t *ListFileTool) Call(_ context.Context, args json.RawMessage) (string, er
 		return "", fmt.Errorf("read dir: %w", err)
 	}
 
+	if len(entries) == 0 {
+		return "No files found in: " + in.Path, nil
+	}
+
 	sb := &strings.Builder{}
-	sb.WriteString(fmt.Sprintf("Files in %s:\n", parsed.Path))
+	sb.WriteString(fmt.Sprintf("Files in %s:\n", in.Path))
 	for _, entry := range entries {
 		sb.WriteByte(fileTypeChar(entry))
 		sb.WriteByte(' ')
@@ -70,21 +77,9 @@ func (t *ListFileTool) Call(_ context.Context, args json.RawMessage) (string, er
 
 func fileTypeChar(e os.DirEntry) byte {
 	mode := e.Type()
-
 	switch {
 	case mode.IsDir():
 		return 'd'
-	case mode&os.ModeSymlink != 0:
-		return 'l'
-	case mode&os.ModeNamedPipe != 0:
-		return 'p'
-	case mode&os.ModeSocket != 0:
-		return 's'
-	case mode&os.ModeDevice != 0:
-		if mode&os.ModeCharDevice != 0 {
-			return 'c'
-		}
-		return 'b'
 	default:
 		return '-'
 	}

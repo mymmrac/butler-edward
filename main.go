@@ -100,7 +100,7 @@ func run(ctx context.Context, v *viper.Viper) error {
 			groqProvider,
 		},
 		[]tool.Tool{
-			filesystem.NewListFileTool(root),
+			filesystem.NewReadDirTool(root),
 			filesystem.NewReadFileTool(root),
 			filesystem.NewWriteFileTool(root),
 		},
