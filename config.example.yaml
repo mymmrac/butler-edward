@@ -1,3 +1,7 @@
+defaults:
+  provider: "PROVIDER_NAME"
+  model: "MODEL_NAME"
+
 workspace:
   root: "./workspace"
 

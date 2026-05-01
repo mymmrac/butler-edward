@@ -1,7 +1,13 @@
 package platform
 
 // Config represents the main configuration structure for the application.
+//
+//revive:disable:nested-structs
 type Config struct {
+	Defaults struct {
+		Provider string `mapstructure:"provider"`
+		Model    string `mapstructure:"model"`
+	} `mapstructure:"defaults"`
 	Workspace struct {
 		Root string `mapstructure:"root"`
 	} `mapstructure:"workspace"`

@@ -120,7 +120,9 @@ func run(ctx context.Context, v *viper.Viper) error {
 			})
 		}
 
-		openAIProvider, err := openai.NewOpenAI(name, config.BaseURL, config.ChatAPI, config.ModelsAPI, config.APIKey, models)
+		openAIProvider, err := openai.NewOpenAI(
+			name, config.BaseURL, config.ChatAPI, config.ModelsAPI, config.APIKey, models,
+		)
 		if err != nil {
 			return fmt.Errorf("new OpenAI compatible %q provider: %w", name, err)
 		}
@@ -147,7 +149,7 @@ func run(ctx context.Context, v *viper.Viper) error {
 		return fmt.Errorf("new agent: %w", err)
 	}
 
-	if err = agentInstance.SelectProviderAndModel(ctx, "groq", "llama-3.1-8b-instant"); err != nil {
+	if err = agentInstance.SelectProviderAndModel(ctx, cfg.Defaults.Provider, cfg.Defaults.Model); err != nil {
 		return fmt.Errorf("select provider and model: %w", err)
 	}
 

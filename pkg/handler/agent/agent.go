@@ -70,7 +70,6 @@ func NewAgent(
 }
 
 // SelectProviderAndModel selects provider and model.
-// TODO: Let user select provider and model, this function is just for testing.
 func (a *Agent) SelectProviderAndModel(ctx context.Context, provider, model string) error {
 	if a.selectedProvider != nil && a.selectedModel != nil {
 		return nil
