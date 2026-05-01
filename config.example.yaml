@@ -14,4 +14,8 @@ providers:
     groq:
       enabled: true
       base_url: "https://api.groq.com"
+      chat_api: "/openai/v1/chat/completions"
+      models_api: "/openai/v1/models"
       api_key: "API_KEY"
+      models:
+        - name: "llama-3.1-8b-instant"

@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/mymmrac/butler-edward/pkg/handler/agent"
+	"github.com/mymmrac/butler-edward/pkg/module/collection"
 	"github.com/mymmrac/butler-edward/pkg/module/logger"
 	"github.com/mymmrac/butler-edward/pkg/module/platform"
 	"github.com/mymmrac/butler-edward/pkg/module/platform/channel"
@@ -113,11 +114,19 @@ func run(ctx context.Context, v *viper.Viper) error {
 	var providers []provider.Provider
 
 	for name, config := range cfg.Providers.OpenAICompatible {
+		models := collection.MakeSlice[provider.Model](len(config.Models))
+		for _, model := range config.Models {
+			models = append(models, provider.Model{
+				Name: model.Name,
+			})
+		}
+
 		var openAIProvider *openai.OpenAI
-		openAIProvider, err = openai.NewOpenAI(name, config.BaseURL, config.APIKey)
+		openAIProvider, err = openai.NewOpenAI(name, config.BaseURL, config.ChatAPI, config.ModelsAPI, config.APIKey, models)
 		if err != nil {
 			return fmt.Errorf("new OpenAI compatible %q provider: %w", name, err)
 		}
+
 		providers = append(providers, openAIProvider)
 	}
 

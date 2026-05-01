@@ -20,28 +20,40 @@ import (
 
 // OpenAI represents OpenAI compatible provider.
 type OpenAI struct {
-	client  *http.Client
-	name    string
-	baseURL url.URL
-	apiKey  string
+	client    *http.Client
+	name      string
+	baseURL   url.URL
+	chatAPI   string
+	modelsAPI string
+	apiKey    string
 
 	modelsLock *sync.RWMutex
 	models     []provider.Model
 }
 
 // NewOpenAI creates a new OpenAI compatible provider.
-func NewOpenAI(name, baseURL, apiKey string) (*OpenAI, error) {
+func NewOpenAI(name, baseURL, chatAPI, modelsAPI, apiKey string, models []provider.Model) (*OpenAI, error) {
 	parsedURL, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse base url: %w", err)
 	}
+
+	if chatAPI == "" {
+		chatAPI = "/openai/v1/chat/completions"
+	}
+	if modelsAPI == "" {
+		modelsAPI = "/openai/v1/models"
+	}
+
 	return &OpenAI{
 		client:     http.DefaultClient,
 		name:       name,
 		baseURL:    *parsedURL,
+		chatAPI:    chatAPI,
+		modelsAPI:  modelsAPI,
 		apiKey:     apiKey,
 		modelsLock: &sync.RWMutex{},
-		models:     nil,
+		models:     models,
 	}, nil
 }
 
@@ -53,7 +65,7 @@ func (o *OpenAI) Name() string {
 // Models returns list of available models.
 func (o *OpenAI) Models(ctx context.Context) ([]provider.Model, error) {
 	o.modelsLock.RLock()
-	if o.models != nil {
+	if len(o.models) != 0 {
 		o.modelsLock.RUnlock()
 		return o.models, nil
 	}
@@ -62,12 +74,12 @@ func (o *OpenAI) Models(ctx context.Context) ([]provider.Model, error) {
 	o.modelsLock.Lock()
 	defer o.modelsLock.Unlock()
 
-	if o.models != nil {
+	if len(o.models) != 0 {
 		return o.models, nil
 	}
 
 	var response modelsResponse
-	if err := o.call(ctx, http.MethodGet, "/openai/v1/models", nil, &response); err != nil {
+	if err := o.call(ctx, http.MethodGet, o.modelsAPI, nil, &response); err != nil {
 		return nil, fmt.Errorf("get models: %w", err)
 	}
 
@@ -140,7 +152,7 @@ func (o *OpenAI) Chat(
 	}
 
 	var response chatResponse
-	if err := o.call(ctx, http.MethodPost, "/openai/v1/chat/completions", request, &response); err != nil {
+	if err := o.call(ctx, http.MethodPost, o.chatAPI, request, &response); err != nil {
 		return nil, fmt.Errorf("chat: %w", err)
 	}
 

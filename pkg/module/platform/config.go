@@ -23,9 +23,14 @@ type Config struct {
 	} `mapstructure:"channels"`
 	Providers struct {
 		OpenAICompatible map[string]struct {
-			Enabled bool   `mapstructure:"enabled"`
-			BaseURL string `mapstructure:"base-url"`
-			APIKey  string `mapstructure:"api-key"`
+			Enabled   bool   `mapstructure:"enabled"`
+			BaseURL   string `mapstructure:"base-url"`
+			ChatAPI   string `mapstructure:"chat-api"`
+			ModelsAPI string `mapstructure:"models-api"`
+			APIKey    string `mapstructure:"api-key"`
+			Models    []struct {
+				Name string `mapstructure:"name"`
+			} `mapstructure:"models"`
 		} `mapstructure:"openai-compatible"`
 	} `mapstructure:"providers"`
 }
