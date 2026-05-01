@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -99,7 +100,7 @@ func (t *Telegram) Start(ctx context.Context) (<-chan channel.Message, error) {
 		case <-ctx.Done():
 			// Ignored
 		case messages <- channel.Message{
-			ChatID: strconv.FormatInt(message.Chat.ID, 10),
+			ChatID: t.encodeChatID(message.Chat.ID, message.MessageThreadID),
 			UserID: strconv.FormatInt(message.From.ID, 10),
 			Text:   message.Text,
 		}:
@@ -131,11 +132,31 @@ func (t *Telegram) Stop(ctx context.Context) error {
 	return nil
 }
 
+func (t *Telegram) encodeChatID(chatID int64, threadID int) string {
+	return strconv.FormatInt(chatID, 10) + "/" + strconv.Itoa(threadID)
+}
+
+func (t *Telegram) decodeChatID(chatID string) (int64, int, error) {
+	parts := strings.Split(chatID, "/")
+	if len(parts) != 2 {
+		return 0, 0, fmt.Errorf("invalid chat ID: %q", chatID)
+	}
+	tChatID, err := strconv.ParseInt(parts[0], 10, 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("parse chat ID: %w", err)
+	}
+	threadID, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, 0, fmt.Errorf("parse thread ID: %w", err)
+	}
+	return tChatID, threadID, nil
+}
+
 // Send sends messages to channel.
 func (t *Telegram) Send(ctx context.Context, msg channel.Message) error {
-	chatID, err := strconv.ParseInt(msg.ChatID, 10, 64)
+	chatID, threadID, err := t.decodeChatID(msg.ChatID)
 	if err != nil {
-		return fmt.Errorf("parse chat id: %w", err)
+		return fmt.Errorf("decode chat id: %w", err)
 	}
 
 	if msg.PlaceholderMessageID != "" {
@@ -146,16 +167,17 @@ func (t *Telegram) Send(ctx context.Context, msg channel.Message) error {
 		}
 
 		err = t.bot.SendMessageDraft(ctx, &telego.SendMessageDraftParams{
-			ChatID:  chatID,
-			DraftID: draftID,
-			Text:    msg.Text,
+			ChatID:          chatID,
+			MessageThreadID: threadID,
+			DraftID:         draftID,
+			Text:            msg.Text,
 		})
 		if err != nil {
 			return fmt.Errorf("send a draft message: %w", err)
 		}
 	}
 
-	_, err = t.bot.SendMessage(ctx, tu.Message(tu.ID(chatID), msg.Text))
+	_, err = t.bot.SendMessage(ctx, tu.Message(tu.ID(chatID), msg.Text).WithMessageThreadID(threadID))
 	if err != nil {
 		return fmt.Errorf("send message: %w", err)
 	}
@@ -165,7 +187,9 @@ func (t *Telegram) Send(ctx context.Context, msg channel.Message) error {
 
 func (t *Telegram) startCommand(ctx *th.Context, message telego.Message) error {
 	_, err := ctx.Bot().
-		SendMessage(ctx, tu.Message(tu.ID(message.Chat.ID), "Hello, I'm Butler Edward! Your personal AI assistant."))
+		SendMessage(ctx, tu.Message(tu.ID(message.Chat.ID), "Hello, I'm Butler Edward! Your personal AI assistant.").
+			WithMessageThreadID(message.MessageThreadID),
+		)
 	if err != nil {
 		return fmt.Errorf("send message: %w", err)
 	}
@@ -174,12 +198,12 @@ func (t *Telegram) startCommand(ctx *th.Context, message telego.Message) error {
 
 // StartTyping starts typing indicator.
 func (t *Telegram) StartTyping(ctx context.Context, chatID string) (stop func(), err error) {
-	tChatID, err := strconv.ParseInt(chatID, 10, 64)
+	tChatID, threadID, err := t.decodeChatID(chatID)
 	if err != nil {
-		return nil, fmt.Errorf("parse chat id: %w", err)
+		return nil, fmt.Errorf("decode chat id: %w", err)
 	}
 
-	action := tu.ChatAction(tu.ID(tChatID), telego.ChatActionTyping)
+	action := tu.ChatAction(tu.ID(tChatID), telego.ChatActionTyping).WithMessageThreadID(threadID)
 	if err = t.bot.SendChatAction(ctx, action); err != nil {
 		return nil, fmt.Errorf("send chat action: %w", err)
 	}
@@ -209,16 +233,17 @@ func (t *Telegram) StartTyping(ctx context.Context, chatID string) (stop func(),
 
 // SendPlaceholder sends a placeholder message.
 func (t *Telegram) SendPlaceholder(ctx context.Context, chatID string) (messageID string, err error) {
-	tChatID, err := strconv.ParseInt(chatID, 10, 64)
+	tChatID, threadID, err := t.decodeChatID(chatID)
 	if err != nil {
-		return "", fmt.Errorf("parse chat id: %w", err)
+		return "", fmt.Errorf("decode chat id: %w", err)
 	}
 
 	draftID := rand.Int() //nolint:gosec
 	err = t.bot.SendMessageDraft(ctx, &telego.SendMessageDraftParams{
-		ChatID:  tChatID,
-		DraftID: draftID,
-		Text:    "Thinking...",
+		ChatID:          tChatID,
+		MessageThreadID: threadID,
+		DraftID:         draftID,
+		Text:            "Thinking...",
 	})
 	if err != nil {
 		return "", fmt.Errorf("send a placeholder message: %w", err)
