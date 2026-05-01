@@ -91,9 +91,9 @@ func run(ctx context.Context, v *viper.Viper) error {
 		return fmt.Errorf("read config: %w", err)
 	}
 
-	cfg, err := platform.ParseConfig(v)
-	if err != nil {
-		return fmt.Errorf("parse config: %w", err)
+	var cfg platform.Config
+	if err := v.Unmarshal(&cfg); err != nil {
+		return fmt.Errorf("unmarshal config: %w", err)
 	}
 
 	var channels []channel.Channel
@@ -103,8 +103,7 @@ func run(ctx context.Context, v *viper.Viper) error {
 	}
 
 	if cfg.Channels.Telegram.Enabled {
-		var telegramChannel *telegram.Telegram
-		telegramChannel, err = telegram.NewTelegram(ctx, cfg.Channels.Telegram.BotToken)
+		telegramChannel, err := telegram.NewTelegram(ctx, cfg.Channels.Telegram.BotToken)
 		if err != nil {
 			return fmt.Errorf("new telegram channel: %w", err)
 		}
@@ -121,8 +120,7 @@ func run(ctx context.Context, v *viper.Viper) error {
 			})
 		}
 
-		var openAIProvider *openai.OpenAI
-		openAIProvider, err = openai.NewOpenAI(name, config.BaseURL, config.ChatAPI, config.ModelsAPI, config.APIKey, models)
+		openAIProvider, err := openai.NewOpenAI(name, config.BaseURL, config.ChatAPI, config.ModelsAPI, config.APIKey, models)
 		if err != nil {
 			return fmt.Errorf("new OpenAI compatible %q provider: %w", name, err)
 		}

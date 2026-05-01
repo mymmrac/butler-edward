@@ -7,15 +7,21 @@ channels:
 
   telegram:
     enabled: true
-    bot_token: "BOT_TOKEN"
+    bot-token: "BOT_TOKEN"
 
 providers:
-  openai_compatible:
+  openai-compatible:
     groq:
       enabled: true
-      base_url: "https://api.groq.com"
-      chat_api: "/openai/v1/chat/completions"
-      models_api: "/openai/v1/models"
-      api_key: "API_KEY"
+      base-url: "https://api.groq.com/openai/v1"
+      chat-api: "/chat/completions"
+      models-api: "/models"
+      api-key: "API_KEY"
       models:
         - name: "llama-3.1-8b-instant"
+    open-router:
+      enabled: true
+      base-url: "https://openrouter.ai/api/v1"
+      chat-api: "/chat/completions"
+      models-api: "/models"
+      api-key: "API_KEY"
