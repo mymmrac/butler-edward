@@ -3,6 +3,7 @@ package telegram
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"strconv"
 	"sync"
 	"time"
@@ -113,6 +114,23 @@ func (t *Telegram) Send(ctx context.Context, msg channel.Message) error {
 		return fmt.Errorf("parse chat id: %w", err)
 	}
 
+	if msg.PlaceholderMessageID != "" {
+		var draftID int
+		draftID, err = strconv.Atoi(msg.PlaceholderMessageID)
+		if err != nil {
+			return fmt.Errorf("parse placeholder message id: %w", err)
+		}
+
+		err = t.bot.SendMessageDraft(ctx, &telego.SendMessageDraftParams{
+			ChatID:  chatID,
+			DraftID: draftID,
+			Text:    msg.Text,
+		})
+		if err != nil {
+			return fmt.Errorf("send a draft message: %w", err)
+		}
+	}
+
 	_, err = t.bot.SendMessage(ctx, tu.Message(tu.ID(chatID), msg.Text))
 	if err != nil {
 		return fmt.Errorf("send message: %w", err)
@@ -154,8 +172,8 @@ func (t *Telegram) StartTyping(ctx context.Context, chatID string) (stop func(),
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				if err = t.bot.SendChatAction(ctx, action); err != nil {
-					logger.Warnw(ctx, "send chat action", "error", err)
+				if sendErr := t.bot.SendChatAction(ctx, action); sendErr != nil {
+					logger.Warnw(ctx, "send chat action", "error", sendErr)
 					return
 				}
 			}
@@ -163,4 +181,24 @@ func (t *Telegram) StartTyping(ctx context.Context, chatID string) (stop func(),
 	}()
 
 	return cancel, nil
+}
+
+// SendPlaceholder sends a placeholder message.
+func (t *Telegram) SendPlaceholder(ctx context.Context, chatID string) (messageID string, err error) {
+	tChatID, err := strconv.ParseInt(chatID, 10, 64)
+	if err != nil {
+		return "", fmt.Errorf("parse chat id: %w", err)
+	}
+
+	draftID := rand.Int() //nolint:gosec
+	err = t.bot.SendMessageDraft(ctx, &telego.SendMessageDraftParams{
+		ChatID:  tChatID,
+		DraftID: draftID,
+		Text:    "Thinking...",
+	})
+	if err != nil {
+		return "", fmt.Errorf("send a placeholder message: %w", err)
+	}
+
+	return strconv.Itoa(draftID), nil
 }

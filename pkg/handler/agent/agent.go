@@ -209,6 +209,13 @@ func (a *Agent) runAgentLoop(ctx context.Context, lc *loopContext) error {
 			return fmt.Errorf("get session history: %w", err)
 		}
 
+		var placeholderMessageID string
+		if pc, ok := lc.ch.(channel.PlaceholderCapable); ok {
+			if placeholderMessageID, err = pc.SendPlaceholder(ctx, lc.chatID); err != nil {
+				logger.Warnw(ctx, "send placeholder", "error", err)
+			}
+		}
+
 		var stopTyping func()
 		if tc, ok := lc.ch.(channel.TypingCapable); ok {
 			if stopTyping, err = tc.StartTyping(ctx, lc.chatID); err != nil {
@@ -228,12 +235,14 @@ func (a *Agent) runAgentLoop(ctx context.Context, lc *loopContext) error {
 
 		if response.Content != "" {
 			err = lc.ch.Send(ctx, channel.Message{
-				ChatID: lc.chatID,
-				Text:   response.Content,
+				ChatID:               lc.chatID,
+				PlaceholderMessageID: placeholderMessageID,
+				Text:                 response.Content,
 			})
 			if err != nil {
 				return fmt.Errorf("send response content message: %w", err)
 			}
+			placeholderMessageID = ""
 		}
 
 		err = lc.chatSession.AddMessage(ctx, provider.Message{
@@ -262,12 +271,14 @@ func (a *Agent) runAgentLoop(ctx context.Context, lc *loopContext) error {
 			}
 
 			err = lc.ch.Send(ctx, channel.Message{
-				ChatID: lc.chatID,
-				Text:   text,
+				ChatID:               lc.chatID,
+				PlaceholderMessageID: placeholderMessageID,
+				Text:                 text,
 			})
 			if err != nil {
 				return fmt.Errorf("send response tool call message: %w", err)
 			}
+			placeholderMessageID = ""
 
 			var result string
 			result, err = a.callTool(ctx, call)

@@ -22,6 +22,8 @@ type Message struct {
 	ChatID string
 	// UserID is the unique identifier of the user who sent the message. When sending the message, this can be omitted.
 	UserID string
+	// PlaceholderMessageID is the unique identifier of the placeholder message. This can be omitted.
+	PlaceholderMessageID string
 	// Text is the text of the message.
 	Text string
 }
@@ -30,4 +32,10 @@ type Message struct {
 type TypingCapable interface {
 	// StartTyping starts typing indicator for the specified chat. Returns a function to stop the typing indicator.
 	StartTyping(ctx context.Context, chatID string) (stop func(), err error)
+}
+
+// PlaceholderCapable represents a channel that supports placeholder messages.
+type PlaceholderCapable interface {
+	// SendPlaceholder sends a placeholder message to the specified chat. Returns the placeholder message ID.
+	SendPlaceholder(ctx context.Context, chatID string) (messageID string, err error)
 }
