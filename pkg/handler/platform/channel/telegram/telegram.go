@@ -107,6 +107,17 @@ func (t *Telegram) Start(ctx context.Context) (<-chan channel.Message, error) {
 			// Sent
 		}
 		return nil
+	}, th.AnyMessageWithText())
+
+	t.bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
+		return ctx.Bot().EditForumTopic(ctx, &telego.EditForumTopicParams{
+			ChatID:            tu.ID(message.Chat.ID),
+			MessageThreadID:   message.MessageThreadID,
+			Name:              "Thread " + strconv.Itoa(message.MessageThreadID),
+			IconCustomEmojiID: new("5417915203100613993"), // 💬
+		})
+	}, func(ctx context.Context, update telego.Update) bool {
+		return update.Message.ForumTopicCreated != nil && update.Message.ForumTopicCreated.IsNameImplicit
 	})
 
 	go func() {
