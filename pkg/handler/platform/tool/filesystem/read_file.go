@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mymmrac/butler-edward/pkg/module/platform/provider"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/provider"
 )
 
 // ReadFileTool represents a tool that reads a file from the filesystem.

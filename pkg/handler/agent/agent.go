@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/channel"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/provider"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/session"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool"
 	"github.com/mymmrac/butler-edward/pkg/module/logger"
-	"github.com/mymmrac/butler-edward/pkg/module/platform/channel"
-	"github.com/mymmrac/butler-edward/pkg/module/platform/provider"
-	"github.com/mymmrac/butler-edward/pkg/module/platform/session"
-	"github.com/mymmrac/butler-edward/pkg/module/platform/tool"
 )
 
 const maxIterations = 5

@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mymmrac/butler-edward/pkg/module/platform/provider"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/provider"
 )
 
 // WriteFileTool represents a tool that writes a file to the filesystem.

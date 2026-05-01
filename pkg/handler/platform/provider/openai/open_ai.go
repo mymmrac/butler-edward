@@ -12,9 +12,9 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/provider"
 	"github.com/mymmrac/butler-edward/pkg/module/collection"
 	"github.com/mymmrac/butler-edward/pkg/module/logger"
-	"github.com/mymmrac/butler-edward/pkg/module/platform/provider"
 	"github.com/mymmrac/butler-edward/pkg/module/ternary"
 )
 

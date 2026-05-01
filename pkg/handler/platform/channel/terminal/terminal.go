@@ -8,8 +8,8 @@ import (
 	"os"
 	"sync"
 
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/channel"
 	"github.com/mymmrac/butler-edward/pkg/module/logger"
-	"github.com/mymmrac/butler-edward/pkg/module/platform/channel"
 )
 
 // Terminal represents a terminal channel.

@@ -3,7 +3,7 @@ package session
 import (
 	"context"
 
-	"github.com/mymmrac/butler-edward/pkg/module/platform/provider"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/provider"
 )
 
 // Manager represents chat session manager.

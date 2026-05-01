@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/mymmrac/butler-edward/pkg/module/platform/provider"
-	"github.com/mymmrac/butler-edward/pkg/module/platform/session"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/provider"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/session"
 )
 
 // InMemory represents an in-memory session manager.

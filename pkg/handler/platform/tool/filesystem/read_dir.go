@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/mymmrac/butler-edward/pkg/module/platform/provider"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/provider"
 )
 
 // ReadDirTool represents a tool that lists files in the filesystem.

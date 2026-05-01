@@ -12,8 +12,8 @@ import (
 	th "github.com/mymmrac/telego/telegohandler"
 	tu "github.com/mymmrac/telego/telegoutil"
 
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/channel"
 	"github.com/mymmrac/butler-edward/pkg/module/logger"
-	"github.com/mymmrac/butler-edward/pkg/module/platform/channel"
 )
 
 const maxTypingDuration = time.Minute
