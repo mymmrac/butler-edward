@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/mymmrac/telego"
 	th "github.com/mymmrac/telego/telegohandler"
@@ -13,6 +14,8 @@ import (
 	"github.com/mymmrac/butler-edward/pkg/module/logger"
 	"github.com/mymmrac/butler-edward/pkg/module/platform/channel"
 )
+
+const maxTypingDuration = time.Minute
 
 // Telegram represents a Telegram channel.
 type Telegram struct {
@@ -125,4 +128,39 @@ func (t *Telegram) startCommand(ctx *th.Context, message telego.Message) error {
 		return fmt.Errorf("send message: %w", err)
 	}
 	return nil
+}
+
+// StartTyping starts typing indicator.
+func (t *Telegram) StartTyping(ctx context.Context, chatID string) (stop func(), err error) {
+	tChatID, err := strconv.ParseInt(chatID, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("parse chat id: %w", err)
+	}
+
+	action := tu.ChatAction(tu.ID(tChatID), telego.ChatActionTyping)
+	if err = t.bot.SendChatAction(ctx, action); err != nil {
+		return nil, fmt.Errorf("send chat action: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, maxTypingDuration)
+	go func() {
+		defer cancel()
+
+		ticker := time.NewTicker(4 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err = t.bot.SendChatAction(ctx, action); err != nil {
+					logger.Warnw(ctx, "send chat action", "error", err)
+					return
+				}
+			}
+		}
+	}()
+
+	return cancel, nil
 }

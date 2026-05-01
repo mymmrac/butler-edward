@@ -25,3 +25,9 @@ type Message struct {
 	// Text is the text of the message.
 	Text string
 }
+
+// TypingCapable represents a channel that supports typing indicators.
+type TypingCapable interface {
+	// StartTyping starts typing indicator for the specified chat. Returns a function to stop the typing indicator.
+	StartTyping(ctx context.Context, chatID string) (stop func(), err error)
+}

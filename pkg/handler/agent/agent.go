@@ -198,7 +198,7 @@ type loopContext struct {
 	chatID      string
 }
 
-//nolint:gocognit
+//nolint:gocognit,funlen
 func (a *Agent) runAgentLoop(ctx context.Context, lc *loopContext) error {
 	for range maxIterations {
 		prv := a.selectedProvider
@@ -209,7 +209,17 @@ func (a *Agent) runAgentLoop(ctx context.Context, lc *loopContext) error {
 			return fmt.Errorf("get session history: %w", err)
 		}
 
+		var stopTyping func()
+		if tc, ok := lc.ch.(channel.TypingCapable); ok {
+			if stopTyping, err = tc.StartTyping(ctx, lc.chatID); err != nil {
+				logger.Warnw(ctx, "start typing", "error", err)
+			}
+		}
+
 		response, err := prv.Chat(ctx, model.Name, history, a.toolDefinitions)
+		if stopTyping != nil {
+			stopTyping()
+		}
 		if err != nil {
 			return fmt.Errorf("chat: %w", err)
 		}
