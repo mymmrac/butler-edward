@@ -33,6 +33,8 @@ channels:
   telegram:
     enabled: true
     bot-token: "YOUR_TELEGRAM_BOT_TOKEN"
+    allowed-chat-ids:
+      - 123456789
 
 providers:
   openai-compatible:

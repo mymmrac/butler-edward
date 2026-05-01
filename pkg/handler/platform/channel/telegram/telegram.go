@@ -20,13 +20,14 @@ const maxTypingDuration = time.Minute
 
 // Telegram represents a Telegram channel.
 type Telegram struct {
-	bot    *telego.Bot
-	bh     *th.BotHandler
-	cancel func()
+	bot            *telego.Bot
+	bh             *th.BotHandler
+	allowedChatIDs map[int64]struct{}
+	cancel         func()
 }
 
 // NewTelegram creates a new Telegram channel.
-func NewTelegram(ctx context.Context, botToken string) (*Telegram, error) {
+func NewTelegram(ctx context.Context, botToken string, allowedChatIDs []int64) (*Telegram, error) {
 	bot, err := telego.NewBot(
 		botToken,
 		telego.WithLogger(logger.FromContext(ctx).WithOptions(logger.WithIncreasedLevel(logger.LevelInfo))),
@@ -36,9 +37,16 @@ func NewTelegram(ctx context.Context, botToken string) (*Telegram, error) {
 		return nil, fmt.Errorf("new bot: %w", err)
 	}
 
+	allowedChatIDsSet := make(map[int64]struct{}, len(allowedChatIDs))
+	for _, id := range allowedChatIDs {
+		allowedChatIDsSet[id] = struct{}{}
+	}
+
 	return &Telegram{
-		bot: bot,
-		bh:  nil,
+		bot:            bot,
+		bh:             nil,
+		allowedChatIDs: allowedChatIDsSet,
+		cancel:         nil,
 	}, nil
 }
 
@@ -60,6 +68,22 @@ func (t *Telegram) Start(ctx context.Context) (<-chan channel.Message, error) {
 	t.bh, err = th.NewBotHandler(t.bot, updates)
 	if err != nil {
 		return nil, fmt.Errorf("new bot handler: %w", err)
+	}
+
+	if len(t.allowedChatIDs) > 0 {
+		t.bh.Use(func(ctx *th.Context, update telego.Update) error {
+			if update.Message == nil {
+				return nil
+			}
+
+			if _, ok := t.allowedChatIDs[update.Message.Chat.ID]; !ok {
+				return nil
+			}
+
+			return ctx.Next(update)
+		})
+	} else {
+		logger.Warn(ctx, "no allowed Telegram chat IDs specified, all messages will be handled")
 	}
 
 	t.bh.HandleMessage(t.startCommand, th.CommandEqual("start"))

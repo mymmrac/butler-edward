@@ -16,8 +16,9 @@ type Config struct {
 			Enabled bool `mapstructure:"enabled"`
 		} `mapstructure:"terminal"`
 		Telegram struct {
-			Enabled  bool   `mapstructure:"enabled"`
-			BotToken string `mapstructure:"bot-token"`
+			Enabled        bool    `mapstructure:"enabled"`
+			BotToken       string  `mapstructure:"bot-token"`
+			AllowedChatIDs []int64 `mapstructure:"allowed-chat-ids"`
 		} `mapstructure:"telegram"`
 	} `mapstructure:"channels"`
 	Providers struct {

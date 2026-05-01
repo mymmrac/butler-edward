@@ -103,7 +103,9 @@ func run(ctx context.Context, v *viper.Viper) error {
 	}
 
 	if cfg.Channels.Telegram.Enabled {
-		telegramChannel, err := telegram.NewTelegram(ctx, cfg.Channels.Telegram.BotToken)
+		telegramChannel, err := telegram.NewTelegram(
+			ctx, cfg.Channels.Telegram.BotToken, cfg.Channels.Telegram.AllowedChatIDs,
+		)
 		if err != nil {
 			return fmt.Errorf("new telegram channel: %w", err)
 		}

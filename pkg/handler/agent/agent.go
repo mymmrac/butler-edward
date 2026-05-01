@@ -113,6 +113,7 @@ func (a *Agent) Run(ctx context.Context) error {
 		defer stopCancel()
 
 		for _, ch := range runningChannels {
+			log.Infow("stopping channel", "name", ch.Name())
 			if err := ch.Stop(stopCtx); err != nil {
 				log.Errorw("stop channel", "name", ch.Name(), "error", err)
 			}
