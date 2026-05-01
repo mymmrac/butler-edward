@@ -215,6 +215,8 @@ func (a *Agent) runAgentLoop(ctx context.Context, lc *loopContext) error {
 			return fmt.Errorf("chat: %w", err)
 		}
 
+		response.Content = strings.TrimSpace(response.Content)
+
 		if response.Content != "" {
 			err = lc.ch.Send(ctx, channel.Message{
 				ChatID: lc.chatID,
