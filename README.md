@@ -3,7 +3,8 @@
 AI agent that aims to be simple and secure yet capable of being useful for day-to-day tasks.
 
 > [!WARNING]
-> This is work in progress software in its pre-alpha state. Use at your own risk.
+> Expect breaking changes!
+> This is work-in-progress software in its pre-alpha state. Use at your own risk.
 
 ## Features
 
@@ -105,3 +106,7 @@ Edward currently has access to the following filesystem tools:
 - `write_file`: Write content to a file.
 
 All tool operations are restricted to the directory defined in `workspace.root`.
+
+## :closed_lock_with_key: License
+
+Butler Edward is distributed under [MIT licence](LICENSE).
