@@ -204,7 +204,20 @@ type loopContext struct {
 }
 
 //nolint:gocognit,funlen
-func (a *Agent) runAgentLoop(ctx context.Context, lc *loopContext) error {
+func (a *Agent) runAgentLoop(ctx context.Context, lc *loopContext) (err_ error) { //revive:disable:var-naming
+	defer func() {
+		if err_ == nil {
+			return
+		}
+
+		sendErr := lc.ch.Send(ctx, channel.Message{
+			ChatID: lc.chatID,
+			Text:   "Failed to respond, try again",
+		})
+		if sendErr != nil {
+			logger.Warnw(ctx, "send error message", "error", sendErr)
+		}
+	}()
 	for range maxIterations {
 		prv := a.selectedProvider
 		model := a.selectedModel
