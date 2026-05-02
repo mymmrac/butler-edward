@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/provider"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool"
 )
 
 // SearchTool represents a tool that searches the web.
@@ -56,24 +57,27 @@ const (
 )
 
 // Call searches the web based on the query.
-func (t *SearchTool) Call(ctx context.Context, args json.RawMessage) (string, error) {
+func (t *SearchTool) Call(ctx context.Context, args json.RawMessage) (*tool.Result, error) {
 	var in struct {
 		Query string `json:"query"`
 		Count int    `json:"count"`
 	}
 	if err := json.Unmarshal(args, &in); err != nil {
-		return "", fmt.Errorf("invalid args: %w", err)
+		return tool.ErrorResult("Invalid arguments", fmt.Errorf("invalid args: %w", err))
 	}
 
 	in.Count = min(max(in.Count, minCount), maxCount)
 
 	results, err := t.searchProvider.Search(ctx, in.Query, in.Count)
 	if err != nil {
-		return "", fmt.Errorf("search: %w", err)
+		return tool.ErrorResult("Failed to search", fmt.Errorf("search: %w", err))
 	}
 
 	if len(results) == 0 {
-		return "No search results were found for: " + strconv.Quote(in.Query), nil
+		return tool.SuccessResult(
+			"No search results were found",
+			"No search results were found for: "+strconv.Quote(in.Query),
+		)
 	}
 
 	sb := &strings.Builder{}
@@ -81,5 +85,5 @@ func (t *SearchTool) Call(ctx context.Context, args json.RawMessage) (string, er
 	for i, result := range results {
 		_, _ = fmt.Fprintf(sb, "%d %s [%s] %s\n", i+1, result.Title, result.URL, result.Description)
 	}
-	return sb.String(), nil
+	return tool.SuccessResult(fmt.Sprintf("Found %d search results", len(results)), sb.String())
 }

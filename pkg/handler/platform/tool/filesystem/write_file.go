@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/provider"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool"
 )
 
 // WriteFileTool represents a tool that writes a file to the filesystem.
@@ -58,7 +59,7 @@ func (t *WriteFileTool) Definition() provider.ToolDefinition {
 }
 
 // Call writes the content to the file at the specified path.
-func (t *WriteFileTool) Call(_ context.Context, args json.RawMessage) (string, error) {
+func (t *WriteFileTool) Call(_ context.Context, args json.RawMessage) (*tool.Result, error) {
 	var in struct {
 		Path    string `json:"path"`
 		Content string `json:"content"`
@@ -66,13 +67,13 @@ func (t *WriteFileTool) Call(_ context.Context, args json.RawMessage) (string, e
 		Action  string `json:"action"`
 	}
 	if err := json.Unmarshal(args, &in); err != nil {
-		return "", fmt.Errorf("invalid args: %w", err)
+		return tool.ErrorResult("Invalid arguments", fmt.Errorf("invalid args: %w", err))
 	}
 
 	flags := os.O_WRONLY
 	if in.Create {
 		if err := t.root.MkdirAll(filepath.Dir(in.Path), 0o755); err != nil {
-			return "", fmt.Errorf("create dir: %w", err)
+			return tool.ErrorResult("Failed to create directory", fmt.Errorf("create dir: %w", err))
 		}
 		flags |= os.O_CREATE
 	}
@@ -83,19 +84,19 @@ func (t *WriteFileTool) Call(_ context.Context, args json.RawMessage) (string, e
 	case "append":
 		flags |= os.O_APPEND
 	default:
-		return "", fmt.Errorf("invalid action: %q", in.Action)
+		return tool.ErrorResult("Invalid action", fmt.Errorf("invalid action: %q", in.Action))
 	}
 
 	file, err := t.root.OpenFile(in.Path, flags, 0o644)
 	if err != nil {
-		return "", fmt.Errorf("open file: %w", err)
+		return tool.ErrorResult("Failed to open file", fmt.Errorf("open file: %w", err))
 	}
 	defer func() { _ = file.Close() }()
 
 	_, err = file.WriteString(in.Content)
 	if err != nil {
-		return "", fmt.Errorf("write file: %w", err)
+		return tool.ErrorResult("Failed to write file", fmt.Errorf("write file: %w", err))
 	}
 
-	return "File written: " + in.Path, nil
+	return tool.SuccessResult("File written", "File written: "+in.Path)
 }

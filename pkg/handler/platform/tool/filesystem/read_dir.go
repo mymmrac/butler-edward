@@ -3,11 +3,13 @@ package filesystem
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/provider"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool"
 )
 
 // ReadDirTool represents a tool that lists files in the filesystem.
@@ -45,26 +47,29 @@ func (t *ReadDirTool) Definition() provider.ToolDefinition {
 }
 
 // Call reads the content of the file at the specified path.
-func (t *ReadDirTool) Call(_ context.Context, args json.RawMessage) (string, error) {
+func (t *ReadDirTool) Call(_ context.Context, args json.RawMessage) (*tool.Result, error) {
 	var in struct {
 		Path string `json:"path"`
 	}
 	if err := json.Unmarshal(args, &in); err != nil {
-		return "", fmt.Errorf("invalid args: %w", err)
+		return tool.ErrorResult("Invalid arguments", fmt.Errorf("invalid args: %w", err))
 	}
 
 	dir, err := t.root.Open(in.Path)
 	if err != nil {
-		return "", fmt.Errorf("open dir: %w", err)
+		if errors.Is(err, os.ErrNotExist) {
+			return tool.ErrorResult("Directory doesn't exist", fmt.Errorf("open dir: %w", err))
+		}
+		return tool.ErrorResult("Failed to open directory", fmt.Errorf("open dir: %w", err))
 	}
 
 	entries, err := dir.ReadDir(-1)
 	if err != nil {
-		return "", fmt.Errorf("read dir: %w", err)
+		return tool.ErrorResult("Failed to read directory", fmt.Errorf("read dir: %w", err))
 	}
 
 	if len(entries) == 0 {
-		return "No files found in: " + in.Path, nil
+		return tool.SuccessResult("No files found in directory", "No files found in: "+in.Path)
 	}
 
 	sb := &strings.Builder{}
@@ -75,7 +80,7 @@ func (t *ReadDirTool) Call(_ context.Context, args json.RawMessage) (string, err
 		_, _ = fmt.Fprint(sb, entry.Name())
 		_ = sb.WriteByte('\n')
 	}
-	return sb.String(), nil
+	return tool.SuccessResult(fmt.Sprintf("Found %d files in directory", len(entries)), sb.String())
 }
 
 func fileTypeChar(e os.DirEntry) byte {

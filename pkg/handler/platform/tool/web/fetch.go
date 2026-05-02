@@ -15,6 +15,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/provider"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool"
 	"github.com/mymmrac/butler-edward/pkg/module/dns"
 )
 
@@ -57,58 +58,61 @@ func (t *FetchTool) Definition() provider.ToolDefinition {
 const fetchLimit = 10 * 1024 * 1024 // 10MB
 
 // Call fetches the contents of a URL using HTTP(S) GET.
-func (t *FetchTool) Call(ctx context.Context, args json.RawMessage) (string, error) {
+func (t *FetchTool) Call(ctx context.Context, args json.RawMessage) (*tool.Result, error) {
 	var in struct {
 		URL string `json:"url"`
 	}
 	if err := json.Unmarshal(args, &in); err != nil {
-		return "", fmt.Errorf("invalid args: %w", err)
+		return tool.ErrorResult("Invalid arguments", fmt.Errorf("invalid args: %w", err))
 	}
 
 	u, err := url.Parse(in.URL)
 	if err != nil {
-		return "", fmt.Errorf("parse url: %w", err)
+		return tool.ErrorResult("Invalid URL", fmt.Errorf("parse url: %w", err))
 	}
 
 	if u.Scheme != "http" && u.Scheme != "https" {
-		return "", fmt.Errorf("invalid url scheme: %q", u.Scheme)
+		return tool.ErrorResult("Invalid URL scheme", fmt.Errorf("invalid url scheme: %q", u.Scheme))
 	}
 	if u.Host == "" {
-		return "", fmt.Errorf("missing url host")
+		return tool.ErrorResult("Missing URL host", fmt.Errorf("missing url host"))
 	}
 
 	hostname := u.Hostname()
 	if dns.ClassifyHost(ctx, hostname) != dns.HostPublic {
-		return "", fmt.Errorf("host %q is not a public hostname", hostname)
+		return tool.ErrorResult(
+			"Host is not a public hostname",
+			fmt.Errorf("host %q is not a public hostname", hostname),
+		)
 	}
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
-		return "", fmt.Errorf("new request: %w", err)
+		return tool.ErrorResult("Failed to create request", fmt.Errorf("new request: %w", err))
 	}
 
 	request.Header.Set("User-Agent", UserAgent)
 
 	response, err := t.client.Do(request)
 	if err != nil {
-		return "", fmt.Errorf("do request: %w", err)
+		return tool.ErrorResult("Failed to fetch URL", fmt.Errorf("do request: %w", err))
 	}
 	defer func() { _ = response.Body.Close() }()
 
 	if response.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("status: %d", response.StatusCode)
+		return tool.ErrorResult("Failed to fetch URL", fmt.Errorf("status: %d", response.StatusCode))
 	}
 
 	contentType := response.Header.Get("Content-Type")
 	mediaType, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
-		return "", fmt.Errorf("parse media type: %w", err)
+		return tool.ErrorResult("Failed to parse media type", fmt.Errorf("parse media type: %w", err))
 	}
 
 	response.Body = http.MaxBytesReader(nil, response.Body, fetchLimit)
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return "", fmt.Errorf("read response: %w", err)
+		return tool.ErrorResult("Failed to read response", fmt.Errorf("read response: %w", err))
 	}
 
 	header := fmt.Sprintf("URL: %s\nContent-Type: %s\n", u.String(), contentType)
@@ -116,13 +120,13 @@ func (t *FetchTool) Call(ctx context.Context, args json.RawMessage) (string, err
 		var doc *goquery.Document
 		doc, err = goquery.NewDocumentFromReader(bytes.NewReader(body))
 		if err != nil {
-			return "", fmt.Errorf("parse html: %w", err)
+			return tool.ErrorResult("Failed to parse HTML", fmt.Errorf("parse html: %w", err))
 		}
 
 		doc.Find("script, style, noscript").Remove()
 		text := doc.Find("body").Text()
-		return header + "\n" + html.UnescapeString(text), nil
+		return tool.SuccessResult("HTML content fetched", header+"\n"+html.UnescapeString(text))
 	}
 
-	return header + "\n" + string(body), nil
+	return tool.SuccessResult("Content fetched", header+"\n"+string(body))
 }

@@ -3,12 +3,14 @@ package filesystem
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/provider"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool"
 )
 
 // ReadFileTool represents a tool that reads a file from the filesystem.
@@ -56,21 +58,21 @@ func (t *ReadFileTool) Definition() provider.ToolDefinition {
 const maxFileSize = 64 * 1024 // 64KB
 
 // Call reads the content of the file at the specified path.
-func (t *ReadFileTool) Call(_ context.Context, args json.RawMessage) (string, error) {
+func (t *ReadFileTool) Call(_ context.Context, args json.RawMessage) (*tool.Result, error) {
 	var in struct {
 		Path    string `json:"path"`
 		Offset  int64  `json:"offset"`
 		MaxSize int64  `json:"maxSize"`
 	}
 	if err := json.Unmarshal(args, &in); err != nil {
-		return "", fmt.Errorf("invalid args: %w", err)
+		return tool.ErrorResult("Invalid arguments", fmt.Errorf("invalid args: %w", err))
 	}
 
 	if in.Offset < 0 {
-		return "", fmt.Errorf("invalid argument: offset cannot be negative")
+		return tool.ErrorResult("Invalid arguments", fmt.Errorf("invalid args: offset cannot be negative"))
 	}
 	if in.MaxSize < 0 {
-		return "", fmt.Errorf("invalid argument: max size cannot be negative")
+		return tool.ErrorResult("Invalid arguments", fmt.Errorf("invalid args: max size cannot be negative"))
 	}
 
 	if in.MaxSize > maxFileSize {
@@ -79,30 +81,33 @@ func (t *ReadFileTool) Call(_ context.Context, args json.RawMessage) (string, er
 
 	file, err := t.root.Open(in.Path)
 	if err != nil {
-		return "", fmt.Errorf("open file: %w", err)
+		if errors.Is(err, os.ErrNotExist) {
+			return tool.ErrorResult("File doesn't exist", fmt.Errorf("open file: %w", err))
+		}
+		return tool.ErrorResult("Failed to open file", fmt.Errorf("open file: %w", err))
 	}
 
 	fileInfo, err := file.Stat()
 	if err != nil {
-		return "", fmt.Errorf("stat file: %w", err)
+		return tool.ErrorResult("Failed to stat file", fmt.Errorf("stat file: %w", err))
 	}
 
 	if fileInfo.IsDir() {
-		return "", fmt.Errorf("file is a directory")
+		return tool.ErrorResult("File is a directory", fmt.Errorf("file is a directory"))
 	}
 
 	size := fileInfo.Size()
 	if size == 0 {
-		return "", fmt.Errorf("file is empty")
+		return tool.SuccessResult("File is empty", "File is empty: "+in.Path)
 	}
 	if in.Offset >= size {
-		return "", fmt.Errorf("offset is past the end of the file")
+		return tool.ErrorResult("Offset is past the end of the file", fmt.Errorf("offset is past the end of the file"))
 	}
 
 	if in.Offset != 0 {
 		_, err = file.Seek(in.Offset, 0)
 		if err != nil {
-			return "", fmt.Errorf("seek file: %w", err)
+			return tool.ErrorResult("Failed to seek file", fmt.Errorf("seek file: %w", err))
 		}
 	}
 
@@ -110,12 +115,12 @@ func (t *ReadFileTool) Call(_ context.Context, args json.RawMessage) (string, er
 
 	content := make([]byte, sizeToRead)
 	if _, err = io.ReadFull(file, content); err != nil {
-		return "", fmt.Errorf("read file: %w", err)
+		return tool.ErrorResult("Failed to read file", fmt.Errorf("read file: %w", err))
 	}
 
 	header := fmt.Sprintf("File: %s\nSize: %d bytes\nOffset: %d bytes\nRead %d bytes\n\n",
 		filepath.Base(in.Path), size, in.Offset, sizeToRead,
 	)
 
-	return header + string(content), nil
+	return tool.SuccessResult(fmt.Sprintf("Read %d bytes from file", sizeToRead), header+string(content))
 }

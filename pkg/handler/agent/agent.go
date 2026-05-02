@@ -264,37 +264,34 @@ func (a *Agent) runAgentLoop(ctx context.Context, lc *loopContext) error {
 		}
 
 		for _, call := range response.ToolCalls {
-			var toolName string
-			text := fmt.Sprintf("Tool call: %s\n", call.ID)
+			var toolName, toolCall string
 			switch call.Type {
 			case provider.ToolTypeFunction:
 				toolName = call.Function.Name
-				text += fmt.Sprintf("\tFunction: %s\n", call.Function.Name)
-				text += fmt.Sprintf("\tArguments: %s\n", call.Function.Arguments)
+				toolCall = fmt.Sprintf("Call tool %s with arguments: %s",
+					call.Function.Name, string(call.Function.Arguments),
+				)
 			default:
-				text += fmt.Sprintf("\tUnsupported tool type: %q\n", call.Type)
+				logger.Warnw(ctx, "unsupported tool type", "call-id", call.ID, "type", call.Type)
+				toolCall = "Unsupported tool type"
 			}
 
 			err = lc.ch.Send(ctx, channel.Message{
 				ChatID:               lc.chatID,
 				PlaceholderMessageID: placeholderMessageID,
-				Text:                 text,
+				Text:                 toolCall,
 			})
 			if err != nil {
 				return fmt.Errorf("send response tool call message: %w", err)
 			}
 			placeholderMessageID = ""
 
-			var result string
-			result, err = a.callTool(ctx, call)
-			if err != nil {
-				result = "Error: " + err.Error()
-			}
+			result := a.callTool(ctx, call)
 
 			err = lc.chatSession.AddMessage(ctx, provider.Message{
 				Role:       provider.MessageRoleTool,
 				Name:       toolName,
-				Content:    result,
+				Content:    result.Result,
 				ToolCallID: call.ID,
 			})
 			if err != nil {
@@ -303,7 +300,7 @@ func (a *Agent) runAgentLoop(ctx context.Context, lc *loopContext) error {
 
 			err = lc.ch.Send(ctx, channel.Message{
 				ChatID: lc.chatID,
-				Text:   "Tool call result:\n" + result,
+				Text:   result.HumanReadableResult,
 			})
 			if err != nil {
 				return fmt.Errorf("send response tool call result message: %w", err)
@@ -313,16 +310,44 @@ func (a *Agent) runAgentLoop(ctx context.Context, lc *loopContext) error {
 	return nil
 }
 
-func (a *Agent) callTool(ctx context.Context, call provider.ToolCall) (string, error) {
+func (a *Agent) callTool(ctx context.Context, call provider.ToolCall) *tool.Result {
 	switch call.Type {
 	case provider.ToolTypeFunction:
 		t, ok := a.tools[call.Function.Name]
 		if !ok {
-			return "", fmt.Errorf("tool with name %q not found", call.Function.Name)
+			return &tool.Result{
+				Result:              fmt.Sprintf("tool with name %q not found", call.Function.Name),
+				HumanReadableResult: "Tool not found",
+			}
 		}
-		return t.Call(ctx, call.Function.Arguments)
+
+		result, err := t.Call(ctx, call.Function.Arguments)
+		if err != nil {
+			if result == nil {
+				return &tool.Result{
+					Result:              "Error: " + err.Error(),
+					HumanReadableResult: "Failed to call tool",
+				}
+			}
+
+			result.Result = "Error: " + err.Error()
+			if result.HumanReadableResult == "" {
+				result.HumanReadableResult = "Failed to call tool"
+			}
+
+			return result
+		}
+
+		if result.HumanReadableResult == "" {
+			result.HumanReadableResult = result.Result
+		}
+		return result
 	default:
-		return "", fmt.Errorf("unsupported tool type: %q", call.Type)
+		logger.Warnw(ctx, "unsupported tool type", "call-id", call.ID, "type", call.Type)
+		return &tool.Result{
+			Result:              fmt.Sprintf("unsupported tool type: %q", call.Type),
+			HumanReadableResult: "Unsupported tool type",
+		}
 	}
 }
 
