@@ -38,7 +38,7 @@ func (p *Provider) Search(ctx context.Context, query string, count int) ([]web.S
 		return nil, fmt.Errorf("new request: %w", err)
 	}
 
-	request.Header.Set("User-Agent", "Mozilla/5.0 (compatible; ButlerEdwardAgent/1.0)")
+	request.Header.Set("User-Agent", web.UserAgent)
 
 	response, err := p.client.Do(request)
 	if err != nil {

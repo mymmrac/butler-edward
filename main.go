@@ -147,6 +147,7 @@ func run(ctx context.Context, v *viper.Viper) error {
 			filesystem.NewReadFileTool(root),
 			filesystem.NewWriteFileTool(root),
 			web.NewSearchTool(duckduckgo.NewProvider()),
+			web.NewFetchTool(),
 		},
 		inmemory.NewInMemory(),
 	)
