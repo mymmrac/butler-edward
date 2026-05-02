@@ -116,7 +116,7 @@ func (t *Telegram) Start(ctx context.Context) (<-chan channel.Message, error) {
 			Name:              "Thread " + strconv.Itoa(message.MessageThreadID),
 			IconCustomEmojiID: new("5417915203100613993"), // 💬
 		})
-	}, func(ctx context.Context, update telego.Update) bool {
+	}, func(_ context.Context, update telego.Update) bool {
 		return update.Message.ForumTopicCreated != nil && update.Message.ForumTopicCreated.IsNameImplicit
 	})
 

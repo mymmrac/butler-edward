@@ -12,6 +12,7 @@ linters:
     - funcorder
     - godot
     - godox
+    - gomodguard
     - interfacebloat
     - ireturn
     - mnd

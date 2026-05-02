@@ -29,6 +29,7 @@ func (t *ReadDirTool) Definition() provider.ToolDefinition {
 			Description: "Lists files and directories for a given path. " +
 				"Returns a list of files in the format `{type} {name}`, " +
 				"where the type is `-` for files and `d` for directories.",
+			//nolint:goconst
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{

@@ -27,6 +27,7 @@ func (t *WriteFileTool) Definition() provider.ToolDefinition {
 		Function: &provider.ToolFunction{
 			Name:        "write_file",
 			Description: "Writes the contents of a file given its path. Supports actions: overwrite and append.",
+			//nolint:goconst
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{

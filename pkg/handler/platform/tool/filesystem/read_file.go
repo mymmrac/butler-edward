@@ -28,6 +28,7 @@ func (t *ReadFileTool) Definition() provider.ToolDefinition {
 		Function: &provider.ToolFunction{
 			Name:        "read_file",
 			Description: "Reads the contents of a file given its path. Supports pagination with offset and max size.",
+			//nolint:goconst
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
