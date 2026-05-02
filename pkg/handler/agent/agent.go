@@ -165,10 +165,14 @@ func (a *Agent) handleMessage(ctx context.Context, ch channel.Channel, msg chann
 	if isNew {
 		err = chatSession.AddMessage(ctx, provider.Message{
 			Role:    provider.MessageRoleSystem,
-			Content: strings.TrimSpace(systemPrompt),
+			Content: a.normalizeContent(systemPrompt),
 		})
 		if err != nil {
 			return fmt.Errorf("add system message to session: %w", err)
+		}
+
+		if sc, ok := ch.(channel.SessionNameCapable); ok {
+			go a.setSessionName(ctx, sc, msg)
 		}
 	}
 
@@ -232,7 +236,7 @@ func (a *Agent) runAgentLoop(ctx context.Context, lc *loopContext) error {
 			return fmt.Errorf("chat: %w", err)
 		}
 
-		response.Content = strings.TrimSpace(response.Content)
+		response.Content = a.normalizeContent(response.Content)
 
 		if response.Content != "" {
 			err = lc.ch.Send(ctx, channel.Message{
@@ -320,4 +324,41 @@ func (a *Agent) callTool(ctx context.Context, call provider.ToolCall) (string, e
 	default:
 		return "", fmt.Errorf("unsupported tool type: %q", call.Type)
 	}
+}
+
+func (a *Agent) setSessionName(ctx context.Context, sc channel.SessionNameCapable, msg channel.Message) {
+	log := logger.FromContext(ctx).With("chat-id", msg.ChatID)
+
+	response, err := a.selectedProvider.Chat(ctx, a.selectedModel.Name, []provider.Message{
+		{
+			Role:    provider.MessageRoleSystem,
+			Content: a.normalizeContent(sessionNameSystemPrompt),
+		},
+		{
+			Role:    provider.MessageRoleUser,
+			Name:    msg.UserID,
+			Content: msg.Text,
+		},
+	}, nil)
+	if err != nil {
+		log.Warnw("chat: session name", "error", err)
+		return
+	}
+
+	response.Content = a.normalizeContent(response.Content)
+	if response.Content == "" {
+		return
+	}
+
+	if len(response.Content) > maxSessionNameLength {
+		response.Content = response.Content[:maxSessionNameLength-3] + "..."
+	}
+
+	if err = sc.SetSessionName(ctx, msg.ChatID, response.Content); err != nil {
+		log.Warnw("set a session name", "error", err)
+	}
+}
+
+func (a *Agent) normalizeContent(content string) string {
+	return strings.TrimSpace(content)
 }

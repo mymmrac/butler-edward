@@ -109,17 +109,6 @@ func (t *Telegram) Start(ctx context.Context) (<-chan channel.Message, error) {
 		return nil
 	}, th.AnyMessageWithText())
 
-	t.bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
-		return ctx.Bot().EditForumTopic(ctx, &telego.EditForumTopicParams{
-			ChatID:            tu.ID(message.Chat.ID),
-			MessageThreadID:   message.MessageThreadID,
-			Name:              "Thread " + strconv.Itoa(message.MessageThreadID),
-			IconCustomEmojiID: new("5417915203100613993"), // 💬
-		})
-	}, func(_ context.Context, update telego.Update) bool {
-		return update.Message.ForumTopicCreated != nil && update.Message.ForumTopicCreated.IsNameImplicit
-	})
-
 	go func() {
 		defer t.cancel()
 		if err = t.bh.Start(); err != nil {
@@ -261,4 +250,22 @@ func (t *Telegram) SendPlaceholder(ctx context.Context, chatID string) (messageI
 	}
 
 	return strconv.Itoa(draftID), nil
+}
+
+// SetSessionName sets session name.
+func (t *Telegram) SetSessionName(ctx context.Context, chatID string, name string) error {
+	tChatID, threadID, err := t.decodeChatID(chatID)
+	if err != nil {
+		return fmt.Errorf("decode chat id: %w", err)
+	}
+	if threadID == 0 {
+		return nil
+	}
+
+	return t.bot.EditForumTopic(ctx, &telego.EditForumTopicParams{
+		ChatID:            tu.ID(tChatID),
+		MessageThreadID:   threadID,
+		Name:              name,
+		IconCustomEmojiID: new("5417915203100613993"), // 💬
+	})
 }

@@ -39,3 +39,9 @@ type PlaceholderCapable interface {
 	// SendPlaceholder sends a placeholder message to the specified chat. Returns the placeholder message ID.
 	SendPlaceholder(ctx context.Context, chatID string) (messageID string, err error)
 }
+
+// SessionNameCapable represents a channel that supports session names.
+type SessionNameCapable interface {
+	// SetSessionName sets the session name for the specified chat.
+	SetSessionName(ctx context.Context, chatID string, name string) error
+}
