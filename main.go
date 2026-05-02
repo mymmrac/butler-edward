@@ -21,6 +21,7 @@ import (
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/session/inmemory"
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool"
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool/filesystem"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool/system"
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool/web"
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool/web/duckduckgo"
 	"github.com/mymmrac/butler-edward/pkg/module/collection"
@@ -146,6 +147,7 @@ func run(ctx context.Context, v *viper.Viper) error {
 			filesystem.NewReadDirTool(root),
 			filesystem.NewReadFileTool(root),
 			filesystem.NewWriteFileTool(root),
+			system.NewTimeTool(),
 			web.NewSearchTool(duckduckgo.NewProvider()),
 			web.NewFetchTool(),
 		},
