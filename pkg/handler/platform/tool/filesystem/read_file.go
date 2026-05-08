@@ -1,7 +1,6 @@
 package filesystem
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -58,7 +57,7 @@ func (t *ReadFileTool) Definition() provider.ToolDefinition {
 const maxFileSize = 64 * 1024 // 64KB
 
 // Call reads the content of the file at the specified path.
-func (t *ReadFileTool) Call(_ context.Context, args json.RawMessage) (*tool.Result, error) {
+func (t *ReadFileTool) Call(_ *tool.Context, args json.RawMessage) (*tool.Result, error) {
 	var in struct {
 		Path    string `json:"path"`
 		Offset  int64  `json:"offset"`

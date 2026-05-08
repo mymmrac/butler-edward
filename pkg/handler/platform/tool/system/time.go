@@ -1,7 +1,6 @@
 package system
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -46,7 +45,7 @@ func (t *TimeTool) Definition() provider.ToolDefinition {
 }
 
 // Call calls the tool.
-func (t *TimeTool) Call(_ context.Context, args json.RawMessage) (*tool.Result, error) {
+func (t *TimeTool) Call(_ *tool.Context, args json.RawMessage) (*tool.Result, error) {
 	var in struct {
 		Format   string `json:"format"`
 		Timezone string `json:"timezone"`

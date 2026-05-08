@@ -1,7 +1,6 @@
 package filesystem
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -47,7 +46,7 @@ func (t *ReadDirTool) Definition() provider.ToolDefinition {
 }
 
 // Call reads the content of the file at the specified path.
-func (t *ReadDirTool) Call(_ context.Context, args json.RawMessage) (*tool.Result, error) {
+func (t *ReadDirTool) Call(_ *tool.Context, args json.RawMessage) (*tool.Result, error) {
 	var in struct {
 		Path string `json:"path"`
 	}

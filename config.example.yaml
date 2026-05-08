@@ -4,6 +4,7 @@ defaults:
 
 workspace:
   root: "./workspace"
+  bolt-db: "./bolt.db"
 
 channels:
   terminal:

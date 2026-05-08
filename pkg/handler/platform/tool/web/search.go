@@ -1,7 +1,6 @@
 package web
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -57,7 +56,7 @@ const (
 )
 
 // Call searches the web based on the query.
-func (t *SearchTool) Call(ctx context.Context, args json.RawMessage) (*tool.Result, error) {
+func (t *SearchTool) Call(ctx *tool.Context, args json.RawMessage) (*tool.Result, error) {
 	var in struct {
 		Query string `json:"query"`
 		Count int    `json:"count"`

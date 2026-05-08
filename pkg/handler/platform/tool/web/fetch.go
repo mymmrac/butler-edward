@@ -2,7 +2,6 @@ package web
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -58,7 +57,7 @@ func (t *FetchTool) Definition() provider.ToolDefinition {
 const fetchLimit = 10 * 1024 * 1024 // 10MB
 
 // Call fetches the contents of a URL using HTTP(S) GET.
-func (t *FetchTool) Call(ctx context.Context, args json.RawMessage) (*tool.Result, error) {
+func (t *FetchTool) Call(ctx *tool.Context, args json.RawMessage) (*tool.Result, error) {
 	var in struct {
 		URL string `json:"url"`
 	}

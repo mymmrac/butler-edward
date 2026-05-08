@@ -9,7 +9,9 @@ import (
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/channel"
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/provider"
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/session"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/storage"
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool/memory"
 	"github.com/mymmrac/butler-edward/pkg/module/logger"
 )
 
@@ -21,7 +23,9 @@ type Agent struct {
 	providers       []provider.Provider
 	tools           map[string]tool.Tool
 	toolDefinitions []provider.ToolDefinition
-	sessionManager  session.Manager
+
+	sessionManager session.Manager
+	storage        storage.Storage
 
 	// TODO: Let user select provider and model.
 	selectedProvider provider.Provider
@@ -31,6 +35,7 @@ type Agent struct {
 // NewAgent creates new agent.
 func NewAgent(
 	channels []channel.Channel, providers []provider.Provider, tools []tool.Tool, sessionManager session.Manager,
+	storage storage.Storage,
 ) (*Agent, error) {
 	if len(channels) == 0 {
 		return nil, fmt.Errorf("no channels configured")
@@ -65,7 +70,9 @@ func NewAgent(
 		providers:       providers,
 		tools:           toolbox,
 		toolDefinitions: toolDefinitions,
-		sessionManager:  sessionManager,
+
+		sessionManager: sessionManager,
+		storage:        storage,
 	}, nil
 }
 
@@ -162,10 +169,23 @@ func (a *Agent) handleMessage(ctx context.Context, ch channel.Channel, msg chann
 		return fmt.Errorf("get session: %w", err)
 	}
 
+	lc := &loopContext{
+		ch:          ch,
+		chatSession: chatSession,
+		userID:      msg.UserID,
+		chatID:      msg.ChatID,
+	}
+
 	if isNew {
+		var builtSystemPrompt string
+		builtSystemPrompt, err = a.buildSystemPrompt(ctx, lc)
+		if err != nil {
+			return fmt.Errorf("build system prompt: %w", err)
+		}
+
 		err = chatSession.AddMessage(ctx, provider.Message{
 			Role:    provider.MessageRoleSystem,
-			Content: a.normalizeContent(systemPrompt),
+			Content: a.normalizeContent(builtSystemPrompt),
 		})
 		if err != nil {
 			return fmt.Errorf("add system message to session: %w", err)
@@ -185,11 +205,7 @@ func (a *Agent) handleMessage(ctx context.Context, ch channel.Channel, msg chann
 		return fmt.Errorf("add user message to session: %w", err)
 	}
 
-	err = a.runAgentLoop(ctx, &loopContext{
-		ch:          ch,
-		chatSession: chatSession,
-		chatID:      msg.ChatID,
-	})
+	err = a.runAgentLoop(ctx, lc)
 	if err != nil {
 		return fmt.Errorf("run agent loop: %w", err)
 	}
@@ -197,9 +213,31 @@ func (a *Agent) handleMessage(ctx context.Context, ch channel.Channel, msg chann
 	return nil
 }
 
+func (a *Agent) buildSystemPrompt(ctx context.Context, lc *loopContext) (string, error) {
+	memories, err := a.storage.ListPrefix(ctx, lc.userID, memory.KeyPrefix)
+	if err != nil {
+		return "", fmt.Errorf("list memories: %w", err)
+	}
+
+	sb := &strings.Builder{}
+	_, _ = sb.WriteString(a.normalizeContent(systemPrompt))
+
+	firstMemory := true
+	for keyword := range memories {
+		if firstMemory {
+			_, _ = sb.WriteString("\n\nMEMORY KEYWORDS:\n")
+			firstMemory = false
+		}
+		_, _ = sb.WriteString("- " + keyword + "\n")
+	}
+
+	return sb.String(), nil
+}
+
 type loopContext struct {
 	ch          channel.Channel
 	chatSession session.Session
+	userID      string
 	chatID      string
 }
 
@@ -299,7 +337,7 @@ func (a *Agent) runAgentLoop(ctx context.Context, lc *loopContext) (err_ error) 
 			}
 			placeholderMessageID = ""
 
-			result := a.callTool(ctx, call)
+			result := a.callTool(ctx, lc, call)
 
 			err = lc.chatSession.AddMessage(ctx, provider.Message{
 				Role:       provider.MessageRoleTool,
@@ -323,7 +361,7 @@ func (a *Agent) runAgentLoop(ctx context.Context, lc *loopContext) (err_ error) 
 	return nil
 }
 
-func (a *Agent) callTool(ctx context.Context, call provider.ToolCall) *tool.Result {
+func (a *Agent) callTool(ctx context.Context, lc *loopContext, call provider.ToolCall) *tool.Result {
 	switch call.Type {
 	case provider.ToolTypeFunction:
 		t, ok := a.tools[call.Function.Name]
@@ -334,7 +372,13 @@ func (a *Agent) callTool(ctx context.Context, call provider.ToolCall) *tool.Resu
 			}
 		}
 
-		result, err := t.Call(ctx, call.Function.Arguments)
+		tc := &tool.Context{
+			Context: ctx,
+			UserID:  lc.chatID,
+			ChatID:  lc.userID,
+		}
+
+		result, err := t.Call(tc, call.Function.Arguments)
 		if err != nil {
 			if result == nil {
 				return &tool.Result{

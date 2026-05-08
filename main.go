@@ -19,8 +19,10 @@ import (
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/provider"
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/provider/openai"
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/session/inmemory"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/storage/bolt"
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool"
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool/filesystem"
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool/memory"
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool/system"
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool/web"
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool/web/duckduckgo"
@@ -141,9 +143,17 @@ func run(ctx context.Context, v *viper.Viper) error {
 	}
 	defer func() { _ = root.Close() }()
 
+	boltStorage, err := bolt.NewBold(cfg.Workspace.BoltDB)
+	if err != nil {
+		return fmt.Errorf("new bolt storage: %w", err)
+	}
+
 	agentInstance, err := agent.NewAgent(
 		channels, providers,
 		[]tool.Tool{
+			memory.NewRecallTool(boltStorage),
+			memory.NewRememberTool(boltStorage),
+			memory.NewForgetTool(boltStorage),
 			filesystem.NewReadDirTool(root),
 			filesystem.NewReadFileTool(root),
 			filesystem.NewWriteFileTool(root),
@@ -152,6 +162,7 @@ func run(ctx context.Context, v *viper.Viper) error {
 			web.NewFetchTool(),
 		},
 		inmemory.NewInMemory(),
+		boltStorage,
 	)
 	if err != nil {
 		return fmt.Errorf("new agent: %w", err)

@@ -9,7 +9,8 @@ type Config struct {
 		Model    string `mapstructure:"model"`
 	} `mapstructure:"defaults"`
 	Workspace struct {
-		Root string `mapstructure:"root"`
+		Root   string `mapstructure:"root"`
+		BoltDB string `mapstructure:"bolt-db"`
 	} `mapstructure:"workspace"`
 	Channels struct {
 		Terminal struct {

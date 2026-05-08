@@ -75,8 +75,8 @@ func (t *Terminal) handleInput(ctx context.Context) {
 		case <-t.done:
 			return
 		case t.messages <- channel.Message{
-			ChatID: "terminal",
 			UserID: "user",
+			ChatID: "terminal",
 			Text:   scanner.Text(),
 		}:
 			// Continue

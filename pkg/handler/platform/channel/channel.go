@@ -18,10 +18,10 @@ type Channel interface {
 
 // Message represents a message received from or sent to the channel.
 type Message struct {
-	// ChatID is the unique identifier of the chat to which the message belongs.
-	ChatID string
 	// UserID is the unique identifier of the user who sent the message. When sending the message, this can be omitted.
 	UserID string
+	// ChatID is the unique identifier of the chat to which the message belongs.
+	ChatID string
 	// PlaceholderMessageID is the unique identifier of the placeholder message. This can be omitted.
 	PlaceholderMessageID string
 	// Text is the text of the message.

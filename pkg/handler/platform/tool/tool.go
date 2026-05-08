@@ -13,7 +13,17 @@ type Tool interface {
 	Definition() provider.ToolDefinition
 
 	// Call calls the tool.
-	Call(ctx context.Context, args json.RawMessage) (*Result, error)
+	Call(ctx *Context, args json.RawMessage) (*Result, error)
+}
+
+// Context representation.
+type Context struct {
+	context.Context //nolint:containedctx
+
+	// UserID is the ID of the user.
+	UserID string
+	// ChatID is the ID of the chat.
+	ChatID string
 }
 
 // Result representation.

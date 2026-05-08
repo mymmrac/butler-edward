@@ -1,7 +1,6 @@
 package filesystem
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -59,7 +58,7 @@ func (t *WriteFileTool) Definition() provider.ToolDefinition {
 }
 
 // Call writes the content to the file at the specified path.
-func (t *WriteFileTool) Call(_ context.Context, args json.RawMessage) (*tool.Result, error) {
+func (t *WriteFileTool) Call(_ *tool.Context, args json.RawMessage) (*tool.Result, error) {
 	var in struct {
 		Path    string `json:"path"`
 		Content string `json:"content"`

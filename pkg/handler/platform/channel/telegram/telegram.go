@@ -100,8 +100,8 @@ func (t *Telegram) Start(ctx context.Context) (<-chan channel.Message, error) {
 		case <-ctx.Done():
 			// Ignored
 		case messages <- channel.Message{
-			ChatID: t.encodeChatID(message.Chat.ID, message.MessageThreadID),
 			UserID: strconv.FormatInt(message.From.ID, 10),
+			ChatID: t.encodeChatID(message.Chat.ID, message.MessageThreadID),
 			Text:   message.Text,
 		}:
 			// Sent
