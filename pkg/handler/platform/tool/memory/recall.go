@@ -24,8 +24,9 @@ func (t *RecallTool) Definition() provider.ToolDefinition {
 	return provider.ToolDefinition{
 		Type: provider.ToolTypeFunction,
 		Function: &provider.ToolFunction{
-			Name:        "recall",
-			Description: "Allows recalling things from the memory by keyword.",
+			Name: "recall",
+			Description: "Allows recalling things from the memory by keyword. " +
+				"Only already known things can be recalled. ",
 			//nolint:goconst
 			Parameters: map[string]any{
 				"type": "object",
