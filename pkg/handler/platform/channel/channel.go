@@ -42,6 +42,8 @@ type PlaceholderCapable interface {
 
 // SessionNameCapable represents a channel that supports session names.
 type SessionNameCapable interface {
+	// CanSetSessionName returns true if the session name can be set for the specified chat.
+	CanSetSessionName(ctx context.Context, chatID string) (bool, error)
 	// SetSessionName sets the session name for the specified chat.
 	SetSessionName(ctx context.Context, chatID string, name string) error
 }

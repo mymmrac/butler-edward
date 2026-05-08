@@ -276,6 +276,15 @@ func (t *Telegram) SendPlaceholder(ctx context.Context, chatID string) (messageI
 	return strconv.Itoa(draftID), nil
 }
 
+// CanSetSessionName returns true if the session name can be set for the given chat ID.
+func (t *Telegram) CanSetSessionName(_ context.Context, chatID string) (bool, error) {
+	_, threadID, err := t.decodeChatID(chatID)
+	if err != nil {
+		return false, fmt.Errorf("decode chat id: %w", err)
+	}
+	return threadID != 0, nil
+}
+
 // SetSessionName sets session name.
 func (t *Telegram) SetSessionName(ctx context.Context, chatID string, name string) error {
 	tChatID, threadID, err := t.decodeChatID(chatID)

@@ -191,7 +191,11 @@ func (a *Agent) handleMessage(ctx context.Context, ch channel.Channel, msg chann
 		}
 
 		if sc, ok := ch.(channel.SessionNameCapable); ok {
-			go a.setSessionName(ctx, sc, msg)
+			if ok, err = sc.CanSetSessionName(ctx, msg.ChatID); err != nil {
+				return fmt.Errorf("check if session name can be set: %w", err)
+			} else if ok {
+				go a.setSessionName(ctx, sc, msg)
+			}
 		}
 	}
 
