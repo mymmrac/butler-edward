@@ -11,7 +11,6 @@ import (
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/session"
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/storage"
 	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool"
-	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool/memory"
 	"github.com/mymmrac/butler-edward/pkg/module/logger"
 )
 
@@ -211,27 +210,6 @@ func (a *Agent) handleMessage(ctx context.Context, ch channel.Channel, msg chann
 	}
 
 	return nil
-}
-
-func (a *Agent) buildSystemPrompt(ctx context.Context, lc *loopContext) (string, error) {
-	memories, err := a.storage.ListPrefix(ctx, lc.userID, memory.KeyPrefix)
-	if err != nil {
-		return "", fmt.Errorf("list memories: %w", err)
-	}
-
-	sb := &strings.Builder{}
-	_, _ = sb.WriteString(a.normalizeContent(systemPrompt))
-
-	firstMemory := true
-	for keyword := range memories {
-		if firstMemory {
-			_, _ = sb.WriteString("\n\nMEMORY KEYWORDS:\n")
-			firstMemory = false
-		}
-		_, _ = sb.WriteString("- " + keyword + "\n")
-	}
-
-	return sb.String(), nil
 }
 
 type loopContext struct {

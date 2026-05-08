@@ -267,7 +267,7 @@ func (t *Telegram) SendPlaceholder(ctx context.Context, chatID string) (messageI
 		ChatID:          tChatID,
 		MessageThreadID: threadID,
 		DraftID:         draftID,
-		Text:            "Thinking...",
+		Text:            "Thinking",
 	})
 	if err != nil {
 		return "", fmt.Errorf("send a placeholder message: %w", err)

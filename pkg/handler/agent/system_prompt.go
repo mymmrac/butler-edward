@@ -1,5 +1,13 @@
 package agent
 
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/mymmrac/butler-edward/pkg/handler/platform/tool/memory"
+)
+
 //nolint:lll
 const systemPrompt = `
 You are a helpful butler named Edward.
@@ -24,3 +32,24 @@ const sessionNameSystemPrompt = `
 Your only task is to create very short, concise and readable chat names based on user's messages that represent the chat intent.
 Output only the generated name, no quotes needed, spaces allowed; it must be less than 64 characters.
 `
+
+func (a *Agent) buildSystemPrompt(ctx context.Context, lc *loopContext) (string, error) {
+	memories, err := a.storage.ListPrefix(ctx, lc.userID, memory.KeyPrefix)
+	if err != nil {
+		return "", fmt.Errorf("list memories: %w", err)
+	}
+
+	sb := &strings.Builder{}
+	_, _ = sb.WriteString(a.normalizeContent(systemPrompt))
+
+	firstMemory := true
+	for keyword := range memories {
+		if firstMemory {
+			_, _ = sb.WriteString("\n\nMEMORY KEYWORDS:\n")
+			firstMemory = false
+		}
+		_, _ = sb.WriteString("- " + strings.TrimPrefix(keyword, memory.KeyPrefix) + "\n")
+	}
+
+	return sb.String(), nil
+}
