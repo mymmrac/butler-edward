@@ -147,6 +147,7 @@ func run(ctx context.Context, v *viper.Viper) error {
 	if err != nil {
 		return fmt.Errorf("new bolt storage: %w", err)
 	}
+	defer func() { _ = boltStorage.Close() }()
 
 	agentInstance, err := agent.NewAgent(
 		channels, providers,
