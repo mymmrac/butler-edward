@@ -37,7 +37,16 @@ func TestSplitText(t *testing.T) {
 			name:      "mixed_split",
 			text:      "Short sentence. AVeryLongWordThatNeedsCharSplit And then words.",
 			maxLength: 10,
-			expected:  []string{"Short", "sentence.", "AVeryLongW", "ordThatNee", "dsCharSpli", "t", "And then", "words."},
+			expected: []string{
+				"Short",
+				"sentence.",
+				"AVeryLongW",
+				"ordThatNee",
+				"dsCharSpli",
+				"t",
+				"And then",
+				"words.",
+			},
 		},
 		{
 			name:      "no_split_needed",

@@ -159,6 +159,13 @@ func (t *Telegram) Send(ctx context.Context, msg channel.Message) error {
 		return fmt.Errorf("decode chat id: %w", err)
 	}
 
+	msg.Text = strings.TrimSpace(msg.Text)
+	if msg.Text == "" {
+		return nil
+	}
+
+	textChunks := channel.SplitText(msg.Text, 4096)
+
 	if msg.PlaceholderMessageID != "" {
 		var draftID int
 		draftID, err = strconv.Atoi(msg.PlaceholderMessageID)
@@ -170,16 +177,33 @@ func (t *Telegram) Send(ctx context.Context, msg channel.Message) error {
 			ChatID:          chatID,
 			MessageThreadID: threadID,
 			DraftID:         draftID,
-			Text:            msg.Text,
+			Text:            textChunks[0],
 		})
 		if err != nil {
 			return fmt.Errorf("send a draft message: %w", err)
 		}
 	}
 
-	_, err = t.bot.SendMessage(ctx, tu.Message(tu.ID(chatID), msg.Text).WithMessageThreadID(threadID))
+	_, err = t.bot.SendMessage(ctx, tu.Message(tu.ID(chatID), textChunks[0]).WithMessageThreadID(threadID))
 	if err != nil {
 		return fmt.Errorf("send message: %w", err)
+	}
+
+	for _, textChunk := range textChunks[1:] {
+		err = t.bot.SendMessageDraft(ctx, &telego.SendMessageDraftParams{
+			ChatID:          chatID,
+			MessageThreadID: threadID,
+			DraftID:         rand.Int(), //nolint:gosec
+			Text:            textChunk,
+		})
+		if err != nil {
+			return fmt.Errorf("send a draft message: %w", err)
+		}
+
+		_, err = t.bot.SendMessage(ctx, tu.Message(tu.ID(chatID), textChunk).WithMessageThreadID(threadID))
+		if err != nil {
+			return fmt.Errorf("send message: %w", err)
+		}
 	}
 
 	return nil
