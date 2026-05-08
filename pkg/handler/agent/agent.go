@@ -356,8 +356,8 @@ func (a *Agent) callTool(ctx context.Context, lc *loopContext, call provider.Too
 
 		tc := &tool.Context{
 			Context: ctx,
-			UserID:  lc.chatID,
-			ChatID:  lc.userID,
+			UserID:  lc.userID,
+			ChatID:  lc.chatID,
 		}
 
 		result, err := t.Call(tc, call.Function.Arguments)
